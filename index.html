@@ -1,257 +1,1066 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TG Username Hunter</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        :root {
-            --bg: #0a0a0a;
-            --surface: #141414;
-            --primary: #00ff88; /* Неоновый зеленый */
-            --text: #ffffff;
-            --text-muted: #888888;
-            --border: #2a2a2a;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NFT Trading Bot</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: var(--tg-theme-bg-color, #ffffff);
+    --text: var(--tg-theme-text-color, #000000);
+    --hint: var(--tg-theme-hint-color, #8e8e93);
+    --link: var(--tg-theme-link-color, #2481cc);
+    --btn: var(--tg-theme-button-color, #2481cc);
+    --btn-text: var(--tg-theme-button-text-color, #ffffff);
+    --sec-bg: var(--tg-theme-secondary-bg-color, #f2f2f7);
+    --danger: #ff3b30;
+    --success: #34c759;
+    --warn: #ff9500;
+    --card-radius: 14px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+    font-size: 16px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body { padding-bottom: env(safe-area-inset-bottom); }
+  .app { max-width: 500px; margin: 0 auto; padding: 16px; }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Courier New', Courier, monospace; /* Хакерский шрифт */
-        }
+  /* ---------- HEADER ---------- */
+  .header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0 20px;
+    position: sticky; top: 0;
+    background: var(--bg);
+    z-index: 10;
+  }
+  .back-btn {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--sec-bg); border: none; cursor: pointer;
+    color: var(--text); font-size: 20px; flex-shrink: 0;
+  }
+  .header h1 { font-size: 20px; font-weight: 700; margin: 0; flex: 1; }
+  .header .subtitle { font-size: 13px; color: var(--hint); margin: 2px 0 0; font-weight: 400; }
 
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            padding: 20px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+  /* ---------- CARDS ---------- */
+  .card {
+    background: var(--sec-bg);
+    border-radius: var(--card-radius);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .card-title { font-size: 13px; color: var(--hint); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-weight: 600; }
+  .card-value { font-size: 22px; font-weight: 700; }
 
-        .header {
-            text-align: center;
-            margin-bottom: 10px;
-        }
+  /* ---------- MENU BUTTONS ---------- */
+  .menu-btn {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--sec-bg); border: none; border-radius: var(--card-radius);
+    padding: 18px 16px; margin-bottom: 10px; width: 100%;
+    color: var(--text); cursor: pointer; text-align: left;
+    font-size: 16px; font-weight: 500; transition: transform 0.08s;
+  }
+  .menu-btn:active { transform: scale(0.98); }
+  .menu-btn .icon { font-size: 22px; width: 32px; text-align: center; flex-shrink: 0; }
+  .menu-btn .arrow { margin-left: auto; color: var(--hint); font-size: 18px; }
+  .menu-btn .badge {
+    background: var(--danger); color: #fff; border-radius: 10px;
+    padding: 2px 8px; font-size: 12px; font-weight: 700; margin-left: auto;
+  }
 
-        .header h1 {
-            color: var(--primary);
-            font-size: 22px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
-        }
+  /* ---------- FORM ---------- */
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 13px; color: var(--hint); margin-bottom: 6px; font-weight: 500; }
+  .input, textarea {
+    width: 100%; padding: 14px 16px;
+    background: var(--sec-bg); border: 1.5px solid transparent;
+    border-radius: 12px; color: var(--text);
+    font-size: 16px; font-family: inherit; outline: none;
+    transition: border-color 0.15s;
+  }
+  .input:focus, textarea:focus { border-color: var(--btn); }
+  textarea { resize: vertical; min-height: 80px; }
 
-        .header p {
-            color: var(--text-muted);
-            font-size: 12px;
-            margin-top: 5px;
-        }
+  /* ---------- BUTTONS ---------- */
+  .btn {
+    display: block; width: 100%; padding: 15px;
+    border: none; border-radius: 12px; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: transform 0.08s, opacity 0.15s;
+    font-family: inherit;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--btn); color: var(--btn-text); }
+  .btn-secondary { background: var(--sec-bg); color: var(--text); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn + .btn { margin-top: 8px; }
+  .btn-row { display: flex; gap: 8px; }
+  .btn-row .btn { margin-top: 0; flex: 1; }
 
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            background: var(--surface);
-            padding: 15px;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-        }
+  /* ---------- ITEM LIST ---------- */
+  .item {
+    background: var(--sec-bg); border-radius: 12px;
+    padding: 14px; margin-bottom: 8px;
+  }
+  .item-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .item-row:last-child { margin-bottom: 0; }
+  .item-label { color: var(--hint); font-size: 13px; }
+  .item-value { font-weight: 600; font-size: 14px; word-break: break-all; }
+  .item-value.code { font-family: 'SF Mono', Menlo, monospace; font-size: 13px; }
+  .item-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
 
-        input, select {
-            background: #000;
-            border: 1px solid var(--border);
-            color: var(--primary);
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 16px;
-            outline: none;
-            font-family: inherit;
-        }
+  /* ---------- STATUS ---------- */
+  .status {
+    display: inline-block; padding: 3px 10px;
+    border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .status-waiting { background: rgba(255,149,0,0.15); color: var(--warn); }
+  .status-pending { background: rgba(255,149,0,0.15); color: var(--warn); }
+  .status-active { background: rgba(36,129,204,0.15); color: var(--link); }
+  .status-completed { background: rgba(52,199,89,0.15); color: var(--success); }
+  .status-cancelled { background: rgba(142,142,147,0.15); color: var(--hint); }
+  .status-rejected { background: rgba(255,59,48,0.15); color: var(--danger); }
 
-        input:focus, select:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 8px rgba(0, 255, 136, 0.2);
-        }
+  /* ---------- STARS ---------- */
+  .stars { color: #ffb400; letter-spacing: 1px; }
 
-        .gen-btn {
-            background: var(--primary);
-            color: #000;
-            border: none;
-            padding: 14px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
+  /* ---------- MODAL / TOAST ---------- */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: rgba(0,0,0,0.85); color: #fff; padding: 12px 20px;
+    border-radius: 24px; font-size: 14px; font-weight: 500;
+    transition: transform 0.3s; z-index: 9999; max-width: 90vw; text-align: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
 
-        .gen-btn:active {
-            transform: scale(0.98);
-            background: #00cc6a;
-        }
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: none; align-items: flex-end; justify-content: center;
+    z-index: 1000; padding: 0;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--bg); border-radius: 20px 20px 0 0;
+    padding: 20px; width: 100%; max-width: 500px;
+    animation: slideUp 0.25s ease-out;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal h3 { margin: 0 0 12px; font-size: 18px; }
+  .modal-close { float: right; background: var(--sec-bg); border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px; }
 
-        .results-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+  /* ---------- SCREEN ---------- */
+  .screen { display: none; }
+  .screen.active { display: block; animation: fadeIn 0.2s; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-        .result-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--surface);
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid var(--primary);
-            animation: slideIn 0.3s ease-out forwards;
-            opacity: 0;
-            transform: translateX(-10px);
-        }
+  /* ---------- ADMIN ---------- */
+  .admin-badge {
+    display: inline-block; background: linear-gradient(135deg, #ffb400, #ff8800);
+    color: #fff; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    margin-left: 6px;
+  }
 
-        .username {
-            font-size: 18px;
-            color: #fff;
-        }
+  /* ---------- EMPTY ---------- */
+  .empty { text-align: center; padding: 40px 20px; color: var(--hint); }
+  .empty .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.6; }
+  .empty p { margin: 0; font-size: 14px; }
 
-        .actions {
-            display: flex;
-            gap: 10px;
-        }
+  /* ---------- COPY ---------- */
+  .copy-btn {
+    background: transparent; border: none; color: var(--link);
+    font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 8px;
+  }
 
-        .action-btn {
-            background: #222;
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            font-family: sans-serif;
-        }
-
-        .action-btn:hover {
-            background: #333;
-        }
-
-        .action-btn.check {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
-        @keyframes slideIn {
-            to { opacity: 1; transform: translateX(0); }
-        }
-    </style>
+  /* ---------- RATING STARS ---------- */
+  .rating-input { display: flex; justify-content: center; gap: 12px; margin: 16px 0; }
+  .rating-input .star {
+    font-size: 40px; cursor: pointer; opacity: 0.3; transition: opacity 0.15s, transform 0.15s;
+    background: none; border: none; padding: 0;
+  }
+  .rating-input .star.active { opacity: 1; transform: scale(1.1); }
+</style>
 </head>
 <body>
+<div class="app" id="app"></div>
+<div class="toast" id="toast"></div>
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal"></div>
+</div>
 
+<script>
+/* ============================================================
+   TELEGRAM WEB APP INIT
+   ============================================================ */
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+  tg.setHeaderColor('secondary_bg_color');
+  tg.setBackgroundColor('bg_color');
+}
+
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const CONFIG = {
+  ADMIN_WALLET: '2204120133486338',
+  SUPPORT: '@GiftGuaranted',
+  MAIN_ADMIN_ID: '8295645690',
+  STORAGE_KEY: 'nft_trading_app_v1'
+};
+
+/* ============================================================
+   STATE & STORAGE
+   ============================================================ */
+let STATE = {
+  currentScreen: 'main',
+  screenParams: {},
+  tgUser: null,
+  data: {
+    trades: {},
+    tradeCount: 0,
+    userWallets: {},
+    userBalances: {},
+    userStats: {},
+    pendingRatings: {},
+    pendingTopups: {},
+    admins: [CONFIG.MAIN_ADMIN_ID]
+  }
+};
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(CONFIG.STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      STATE.data = { ...STATE.data, ...parsed };
+      if (!STATE.data.admins.includes(CONFIG.MAIN_ADMIN_ID)) {
+        STATE.data.admins.push(CONFIG.MAIN_ADMIN_ID);
+      }
+    }
+  } catch (e) { console.error('load error', e); }
+}
+function saveData() {
+  try { localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(STATE.data)); }
+  catch (e) { console.error('save error', e); }
+}
+
+function getUserId() {
+  if (STATE.tgUser) return String(STATE.tgUser.id);
+  // fallback для тестирования в браузере
+  if (!localStorage.getItem('_test_uid')) localStorage.setItem('_test_uid', '100000001');
+  return localStorage.getItem('_test_uid');
+}
+function getUserName() {
+  if (STATE.tgUser) return STATE.tgUser.username || STATE.tgUser.first_name || 'user';
+  return 'testuser';
+}
+function isAdmin(uid = getUserId()) {
+  return STATE.data.admins.includes(String(uid));
+}
+function ensureUserStats(uid) {
+  if (!STATE.data.userStats[uid]) {
+    STATE.data.userStats[uid] = {
+      completed_trades: 0, total_rating: 0, rating_count: 0,
+      average_rating: 0.0, first_seen: new Date().toISOString()
+    };
+    saveData();
+  }
+}
+
+/* ============================================================
+   UTILS
+   ============================================================ */
+function toast(msg, ms = 2200) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), ms);
+}
+function fmtMoney(n) { return Number(n).toLocaleString('ru-RU') + ' ₽'; }
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function nowISO() { return new Date().toISOString(); }
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function copyText(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => toast('✅ Скопировано'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    toast('✅ Скопировано');
+  }
+}
+function openModal(html) {
+  document.getElementById('modal').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function go(screen, params = {}) {
+  STATE.currentScreen = screen;
+  STATE.screenParams = params;
+  render();
+  window.scrollTo(0, 0);
+}
+
+/* ============================================================
+   SCREEN: MAIN
+   ============================================================ */
+function screenMain() {
+  const uid = getUserId();
+  const name = getUserName();
+  ensureUserStats(uid);
+  const admin = isAdmin(uid);
+  const pendingRatings = STATE.data.pendingRatings[uid] || [];
+  const ratingBadge = pendingRatings.length ? `<span class="badge">${pendingRatings.length}</span>` : '';
+
+  return `
     <div class="header">
-        <h1>[ Username_Hunter ]</h1>
-        <p>Генератор редких и свободных ников</p>
+      <div>
+        <h1>🎨 NFT Trading</h1>
+        <p class="subtitle">Привет, ${esc(name)}!${admin ? '<span class="admin-badge">ADMIN</span>' : ''}</p>
+      </div>
     </div>
 
-    <div class="input-group">
-        <input type="text" id="base-word" placeholder="Введите слово (напр. crypto)" maxlength="15">
-        <select id="style-select">
-            <option value="short">Короткие (3-4 символа)</option>
-            <option value="aesthetic">Эстетичные (с _)</option>
-            <option value="leet">Leet-стиль (cryp70)</option>
-            <option value="prefix">С приставкой (the_crypto)</option>
-        </select>
-        <button class="gen-btn" onclick="generateUsernames()">Сгенерировать</button>
+    ${pendingRatings.length ? `
+      <div class="card" style="background:linear-gradient(135deg,rgba(255,180,0,0.15),rgba(255,136,0,0.15));border:1px solid rgba(255,180,0,0.3);">
+        <div class="card-title">⭐ Оцените сделку</div>
+        <div style="font-size:14px;margin-bottom:10px;">У вас есть ${pendingRatings.length} незавершённая оценка.</div>
+        <button class="btn btn-primary" onclick="go('ratings')">Перейти к оценкам</button>
+      </div>
+    ` : ''}
+
+    <button class="menu-btn" onclick="go('create-trade')">
+      <span class="icon">💰</span><span>Создать сделку</span><span class="arrow">›</span>
+    </button>
+    <button class="menu-btn" onclick="go('join-trade')">
+      <span class="icon">🔗</span><span>Присоединиться к сделке</span><span class="arrow">›</span>
+    </button>
+    <button class="menu-btn" onclick="go('profile')">
+      <span class="icon">👤</span><span>Профиль</span><span class="arrow">›</span>
+    </button>
+    <button class="menu-btn" onclick="go('wallets')">
+      <span class="icon">💼</span><span>Кошельки</span><span class="arrow">›</span>
+    </button>
+    <button class="menu-btn" onclick="go('my-trades')">
+      <span class="icon">📊</span><span>Мои сделки</span><span class="arrow">›</span>
+    </button>
+    <button class="menu-btn" onclick="go('support')">
+      <span class="icon">🆘</span><span>Поддержка</span><span class="arrow">›</span>
+    </button>
+    ${admin ? `<button class="menu-btn" onclick="go('admin')" style="background:linear-gradient(135deg,rgba(255,180,0,0.15),rgba(255,136,0,0.15));">
+      <span class="icon">🔧</span><span>Админ-панель</span><span class="arrow">›</span>
+    </button>` : ''}
+  `;
+}
+
+/* ============================================================
+   SCREEN: PROFILE
+   ============================================================ */
+function screenProfile() {
+  const uid = getUserId();
+  ensureUserStats(uid);
+  const s = STATE.data.userStats[uid];
+  const bal = STATE.data.userBalances[uid] || 0;
+  const stars = '⭐'.repeat(Math.round(s.average_rating)) || '⭕';
+  const admin = isAdmin(uid);
+
+  return `
+    <div class="header">
+      <button class="back-btn" onclick="go('main')">←</button>
+      <div><h1>Профиль</h1></div>
     </div>
 
-    <div class="results-container" id="results">
-        <!-- Сюда будут падать результаты -->
+    <div class="card" style="text-align:center;">
+      <div style="font-size:48px;margin-bottom:8px;">👤</div>
+      <div style="font-size:20px;font-weight:700;">@${esc(getUserName())}</div>
+      <div style="color:var(--hint);font-size:13px;margin-top:4px;">ID: ${uid}${admin ? ' · <span class="admin-badge">ADMIN</span>' : ''}</div>
     </div>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.setHeaderColor('#0a0a0a');
-        tg.setBackgroundColor('#0a0a0a');
+    <div class="card">
+      <div class="card-title">⭐ Рейтинг</div>
+      <div class="card-value">${s.average_rating.toFixed(2)} / 5.0</div>
+      <div class="stars" style="font-size:20px;margin-top:6px;">${stars}</div>
+      <div style="font-size:13px;color:var(--hint);margin-top:6px;">Всего оценок: ${s.rating_count} · Сделок: ${s.completed_trades}</div>
+    </div>
 
-        const charMap = { 'a': '4', 'e': '3', 'i': '1', 'o': '0', 's': '5', 't': '7' };
-        const prefixes = ['the', 'mr', 'real', '0x', 'im'];
-        const suffixes = ['hq', 'vip', 'x', 'eth', 'dao'];
+    <div class="card">
+      <div class="card-title">💰 Баланс</div>
+      <div class="card-value">${fmtMoney(bal)}</div>
+    </div>
 
-        function generateUsernames() {
-            const base = document.getElementById('base-word').value.trim().toLowerCase();
-            const style = document.getElementById('style-select').value;
-            const resultsDiv = document.getElementById('results');
-            
-            if (!base) {
-                tg.showAlert("Введите слово!");
-                return;
-            }
+    <button class="btn btn-primary" onclick="go('topup')">💳 Пополнить баланс</button>
+    <button class="btn btn-secondary" onclick="go('wallets')">💼 Мои кошельки</button>
+  `;
+}
 
-            tg.HapticFeedback.impactOccurred('medium');
-            resultsDiv.innerHTML = ''; // Очищаем старое
+/* ============================================================
+   SCREEN: CREATE TRADE
+   ============================================================ */
+function screenCreateTrade() {
+  return `
+    <div class="header">
+      <button class="back-btn" onclick="go('main')">←</button>
+      <div><h1>Создать сделку</h1></div>
+    </div>
 
-            let generated = new Set();
+    <div class="field">
+      <label>🎨 NFT (ссылка или описание)</label>
+      <textarea id="nft-link" placeholder="https://opensea.io/... или описание NFT"></textarea>
+    </div>
 
-            while (generated.size < 6) {
-                let name = '';
-                let randomSuffix = suffixes[Math.floor(Math.random() * suffixes.length)];
-                let randomPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    <div class="field">
+      <label>💰 Сумма (₽, минимум 100)</label>
+      <input id="trade-amount" type="number" class="input" placeholder="1000" min="100">
+    </div>
 
-                switch(style) {
-                    case 'short':
-                        // Берем часть слова и добавляем 1 символ
-                        name = base.substring(0, 3) + randomSuffix.charAt(0);
-                        break;
-                    case 'aesthetic':
-                        name = `_${base}_`;
-                        break;
-                    case 'leet':
-                        name = base.split('').map(c => charMap[c] || c).join('');
-                        break;
-                    case 'prefix':
-                        name = `${randomPrefix}_${base}`;
-                        break;
-                }
-                generated.add(name);
-            }
+    <button class="btn btn-primary" onclick="submitCreateTrade()">✅ Создать сделку</button>
+  `;
+}
 
-            // Отрисовываем результаты
-            Array.from(generated).forEach((username, index) => {
-                const item = document.createElement('div');
-                item.className = 'result-item';
-                item.style.animationDelay = `${index * 0.1}s`;
-                
-                item.innerHTML = `
-                    <span class="username">@${username}</span>
-                    <div class="actions">
-                        <button class="action-btn" onclick="copyToClipboard('${username}')">Копировать</button>
-                        <button class="action-btn check" onclick="checkUsername('${username}')">Проверить</button>
-                    </div>
-                `;
-                resultsDiv.appendChild(item);
-            });
-        }
+function submitCreateTrade() {
+  const link = document.getElementById('nft-link').value.trim();
+  const amount = parseFloat(document.getElementById('trade-amount').value);
+  if (!link) return toast('❌ Введите описание NFT');
+  if (!amount || amount < 100) return toast('❌ Минимальная сумма 100 ₽');
 
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                tg.HapticFeedback.notificationOccurred('success');
-                tg.showAlert(`@${text} скопирован!`);
-            });
-        }
+  const uid = getUserId();
+  const tradeId = 'trade_' + STATE.data.tradeCount;
+  STATE.data.tradeCount += 1;
+  STATE.data.trades[tradeId] = {
+    seller_id: uid,
+    seller_username: getUserName(),
+    nft_link: link,
+    amount: amount,
+    status: 'waiting_buyer',
+    created_at: nowISO(),
+    buyer_id: null,
+    buyer_username: null,
+    history: [{ status: 'waiting_buyer', at: nowISO() }]
+  };
+  saveData();
+  go('trade-view', { tradeId });
+  toast('✅ Сделка создана');
+}
 
-        function checkUsername(username) {
-            tg.HapticFeedback.impactOccurred('light');
-            // Отправляем данные в бота для проверки
-            tg.sendData(JSON.stringify({
-                action: "check_username",
-                username: username
-            }));
-            tg.showAlert(`Запрос на проверку @${username} отправлен в бота. Проверьте чат!`);
-        }
-    </script>
+/* ============================================================
+   SCREEN: JOIN TRADE
+   ============================================================ */
+function screenJoinTrade() {
+  return `
+    <div class="header">
+      <button class="back-btn" onclick="go('main')">←</button>
+      <div><h1>Присоединиться</h1></div>
+    </div>
+
+    <div class="field">
+      <label>🆔 ID сделки</label>
+      <input id="join-id" class="input" placeholder="trade_0">
+    </div>
+    <button class="btn btn-primary" onclick="submitJoinTrade()">🔗 Открыть сделку</button>
+  `;
+}
+
+function submitJoinTrade() {
+  const id = document.getElementById('join-id').value.trim();
+  if (!STATE.data.trades[id]) return toast('❌ Сделка не найдена');
+  go('trade-view', { tradeId: id });
+}
+
+/* ============================================================
+   SCREEN: TRADE VIEW
+   ============================================================ */
+function screenTradeView() {
+  const tradeId = STATE.screenParams.tradeId;
+  const t = STATE.data.trades[tradeId];
+  if (!t) return `<div class="empty"><div class="icon">❓</div><p>Сделка не найдена</p></div>`;
+
+  const uid = getUserId();
+  const role = uid === t.seller_id ? 'seller' : (uid === t.buyer_id ? 'buyer' : 'viewer');
+  const statusLabel = {
+    waiting_buyer: ['Ожидает покупателя', 'status-waiting'],
+    waiting_payment: ['Ожидает оплаты', 'status-pending'],
+    pending_verification: ['Проверка оплаты', 'status-pending'],
+    payment_confirmed: ['Оплата подтверждена', 'status-active'],
+    nft_sent: ['NFT передан', 'status-active'],
+    completed: ['Завершена', 'status-completed'],
+    cancelled: ['Отменена', 'status-cancelled'],
+    payment_rejected: ['Оплата отклонена', 'status-rejected']
+  }[t.status] || [t.status, 'status-waiting'];
+
+  let actions = '';
+  if (role === 'seller' && t.status === 'waiting_buyer') {
+    const joinUrl = `${location.origin}${location.pathname}?trade=${tradeId}`;
+    actions = `
+      <div class="card">
+        <div class="card-title">🔗 Ссылка для покупателя</div>
+        <div class="item-value code" style="word-break:break-all;font-size:12px;">${esc(joinUrl)}</div>
+        <button class="copy-btn" onclick="copyText('${joinUrl}')">📋 Копировать</button>
+      </div>`;
+  }
+  if (role === 'viewer' && t.status === 'waiting_buyer') {
+    actions = `<button class="btn btn-primary" onclick="joinAsBuyer('${tradeId}')">🤝 Присоединиться как покупатель</button>`;
+  }
+  if (role === 'buyer' && t.status === 'waiting_payment') {
+    actions = `
+      <div class="card">
+        <div class="card-title">💳 Реквизиты для оплаты</div>
+        <div class="item-value code" style="font-size:14px;">${CONFIG.ADMIN_WALLET}</div>
+        <button class="copy-btn" onclick="copyText('${CONFIG.ADMIN_WALLET}')">📋 Копировать</button>
+      </div>
+      <button class="btn btn-primary" onclick="markPaid('${tradeId}')">✅ Я оплатил</button>
+      <button class="btn btn-danger" onclick="cancelTrade('${tradeId}')">❌ Отменить</button>`;
+  }
+  if (role === 'seller' && t.status === 'payment_confirmed') {
+    actions = `<button class="btn btn-primary" onclick="markNftSent('${tradeId}')">📦 Я передал NFT</button>`;
+  }
+  if (role === 'buyer' && t.status === 'nft_sent') {
+    actions = `<button class="btn btn-success" onclick="markNftReceived('${tradeId}')">✅ Я получил NFT</button>`;
+  }
+  if (role === 'seller' && t.status === 'completed') {
+    actions = `<div class="card" style="background:rgba(52,199,89,0.15);">
+      <div class="card-title">💰 Выплата</div>
+      <div class="item-value">${fmtMoney(t.amount)}</div>
+      <div style="font-size:13px;color:var(--hint);margin-top:6px;">Ожидайте перевода на ваш кошелёк.</div>
+    </div>`;
+  }
+
+  if (isAdmin(uid) && t.status === 'pending_verification') {
+    actions += `
+      <button class="btn btn-success" style="margin-top:12px;" onclick="adminConfirmPayment('${tradeId}')">✅ Подтвердить оплату</button>
+      <button class="btn btn-danger" onclick="adminRejectPayment('${tradeId}')">❌ Отклонить оплату</button>`;
+  }
+
+  return `
+    <div class="header">
+      <button class="back-btn" onclick="go('main')">←</button>
+      <div><h1>Сделка ${tradeId}</h1></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Статус</div>
+      <span class="status ${statusLabel[1]}">${statusLabel[0]}</span>
+    </div>
+
+    <div class="card">
+      <div class="item-row"><span class="item-label">🎨 NFT</span></div>
+      <div class="item-value" style="margin:6px 0;">${esc(t.nft_link)}</div>
+      <div class="item-row"><span class="item-label">💰 Сумма</span><span class="item-value">${fmtMoney(t.amount)}</span></div>
+      <div class="item-row"><span class="item-label">👤 Продавец</span><span class="item-value">@${esc(t.seller_username)}</span></div>
+      ${t.buyer_username ? `<div class="item-row"><span class="item-label">👤 Покупатель</span><span class="item-value">@${esc(t.buyer_username)}</span></div>` : ''}
+      <div class="item-row"><span class="item-label">📅 Создана</span><span class="item-value" style="font-size:12px;">${fmtDate(t.created_at)}</span></div>
+    </div>
+
+    ${actions}
+  `;
+}
+
+function joinAsBuyer(tradeId) {
+  const t = STATE.data.trades[tradeId];
+  if (!t) return toast('❌ Сделка не найдена');
+  if (t.status !== 'waiting_buyer') return toast('❌ Сделка недоступна');
+  t.buyer_id = getUserId();
+  t.buyer_username = getUserName();
+  t.status = 'waiting_payment';
+  t.history.push({ status: 'waiting_payment', at: nowISO() });
+  saveData();
+  toast('✅ Вы присоединились');
+  render();
+}
+function markPaid(tradeId) {
+  const t = STATE.data.trades[tradeId];
+  t.status = 'pending_verification';
+  t.payment_reported_at = nowISO();
+  t.history.push({ status: 'pending_verification', at: nowISO() });
+  saveData();
+  toast('⏳ Оплата на проверке');
+  render();
+}
+function cancelTrade(tradeId) {
+  const t = STATE.data.trades[tradeId];
+  t.status = 'cancelled';
+  t.history.push({ status: 'cancelled', at: nowISO() });
+  saveData();
+  toast('❌ Сделка отменена');
+  render();
+}
+function markNftSent(tradeId) {
+  const t = STATE.data.trades[tradeId];
+  t.status = 'nft_sent';
+  t.nft_sent_at = nowISO();
+  t.history.push({ status: 'nft_sent', at: nowISO() });
+  saveData();
+  toast('📦 Отправлено');
+  render();
+}
+function markNftReceived(tradeId) {
+  const t = STATE.data.trades[tradeId];
+  t.status = 'completed';
+  t.completed_at = nowISO();
+  t.history.push({ status: 'completed', at: nowISO() });
+  ensureUserStats(t.seller_id);
+  STATE.data.userStats[t.seller_id].completed_trades += 1;
+  // Добавляем pending rating и продавцу и покупателю
+  addPendingRating(t.buyer_id, tradeId, t.seller_id, t.seller_username);
+  addPendingRating(t.seller_id, tradeId, t.buyer_id, t.buyer_username);
+  saveData();
+  toast('🎉 Сделка завершена!');
+  go('main');
+}
+
+function addPendingRating(raterId, tradeId, targetId, targetUsername) {
+  if (!STATE.data.pendingRatings[raterId]) STATE.data.pendingRatings[raterId] = [];
+  STATE.data.pendingRatings[raterId].push({ tradeId, targetId, targetUsername });
+}
+
+/* ============================================================
+   ADMIN: confirm/reject payment
+   ============================================================ */
+function adminConfirmPayment(tradeId) {
+  const t = STATE.data.trades[tradeId];
+  t.status = 'payment_confirmed';
+  t.history.push({ status: 'payment_confirmed', at: nowISO() });
+  saveData();
+  toast('✅ Оплата подтверждена');
+  render();
+}
+function adminRejectPayment(tradeId) {
+  const t = STATE.data.trades[tradeId];
+  t.status = 'payment_rejected';
+  t.history.push({ status: 'payment_rejected', at: nowISO() });
+  saveData();
+  toast('❌ Оплата отклонена');
+  render();
+}
+
+/* ============================================================
+   SCREEN: MY TRADES
+   ============================================================ */
+function screenMyTrades() {
+  const uid = getUserId();
+  const list = Object.entries(STATE.data.trades)
+    .filter(([_, t]) => t.seller_id === uid || t.buyer_id === uid)
+    .sort((a, b) => new Date(b[1].created_at) - new Date(a[1].created_at));
+
+  if (!list.length) return `
+    <div class="header"><button class="back-btn" onclick="go('main')">←</button><h1>Мои сделки</h1></div>
+    <div class="empty"><div class="icon">📭</div><p>У вас пока нет сделок</p></div>`;
+
+  return `
+    <div class="header"><button class="back-btn" onclick="go('main')">←</button><h1>Мои сделки</h1></div>
+    ${list.map(([id, t]) => {
+      const role = t.seller_id === uid ? 'продавец' : 'покупатель';
+      const status = {
+        waiting_buyer: '⏳ Ожидает', waiting_payment: '💳 Ожидает оплаты',
+        pending_verification: '🔍 Проверка', payment_confirmed: '✅ Оплачено',
+        nft_sent: '📦 Передан', completed: '🎉 Завершена',
+        cancelled: '❌ Отменена', payment_rejected: '❌ Отклонена'
+      }[t.status] || t.status;
+      return `<div class="item" onclick="go('trade-view',{tradeId:'${id}'})" style="cursor:pointer;">
+        <div class="item-title">${id} · ${status}</div>
+        <div style="font-size:13px;color:var(--hint);">${role} · ${fmtMoney(t.amount)}</div>
+      </div>`;
+    }).join('')}
+  `;
+}
+
+/* ============================================================
+   SCREEN: WALLETS
+   ============================================================ */
+function screenWallets() {
+  const uid = getUserId();
+  const wallets = STATE.data.userWallets[uid] || {};
+  const list = Object.entries(wallets);
+  const typeNames = { card: '💳 Карта', sbp: '📱 СБП', yoomoney: '💰 ЮMoney', qiwi: '🧾 Qiwi' };
+
+  return `
+    <div class="header"><button class="back-btn" onclick="go('main')">←</button><h1>Кошельки</h1></div>
+    ${list.length ? list.map(([type, w]) => `
+      <div class="item">
+        <div class="item-row">
+          <div>
+            <div class="item-title">${typeNames[type] || type}</div>
+            <div class="item-value code" style="font-size:13px;">${esc(w.details)}</div>
+          </div>
+          <button class="copy-btn" onclick="copyText('${esc(w.details)}')" style="background:var(--danger);color:#fff;padding:8px 12px;border-radius:8px;">🗑️</button>
+        </div>
+      </div>`).join('') : `
+      <div class="empty"><div class="icon">💼</div><p>Нет добавленных кошельков</p></div>`}
+    <button class="btn btn-primary" onclick="go('add-wallet')">➕ Добавить кошелёк</button>
+  `;
+}
+
+function screenAddWallet() {
+  return `
+    <div class="header"><button class="back-btn" onclick="go('wallets')">←</button><h1>Добавить кошелёк</h1></div>
+    <button class="menu-btn" onclick="startAddWallet('card')"><span class="icon">💳</span>Банковская карта<span class="arrow">›</span></button>
+    <button class="menu-btn" onclick="startAddWallet('sbp')"><span class="icon">📱</span>СБП<span class="arrow">›</span></button>
+    <button class="menu-btn" onclick="startAddWallet('yoomoney')"><span class="icon">💰</span>ЮMoney<span class="arrow">›</span></button>
+    <button class="menu-btn" onclick="startAddWallet('qiwi')"><span class="icon">🧾</span>Qiwi<span class="arrow">›</span></button>
+  `;
+}
+
+function startAddWallet(type) {
+  const prompts = {
+    card: ['💳 Номер карты', '16-19 цифр', 'text'],
+    sbp: ['📱 Телефон для СБП', '+7XXXXXXXXXX', 'tel'],
+    yoomoney: ['💰 Номер кошелька ЮMoney', 'например 4100112345678', 'text'],
+    qiwi: ['🧾 Номер кошелька Qiwi', '+7XXXXXXXXXX', 'tel']
+  };
+  const p = prompts[type];
+  openModal(`
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3>${p[0]}</h3>
+    <div class="field">
+      <label>${p[1]}</label>
+      <input id="wallet-details" class="input" type="${p[2]}" placeholder="${p[1]}">
+    </div>
+    <button class="btn btn-primary" onclick="saveWallet('${type}')">💾 Сохранить</button>
+  `);
+}
+
+function saveWallet(type) {
+  const raw = document.getElementById('wallet-details').value.trim();
+  if (!raw) return toast('❌ Введите реквизиты');
+  let details = raw;
+  if (type === 'card') {
+    const clean = raw.replace(/\s+/g, '');
+    if (!/^\d{16,19}$/.test(clean)) return toast('❌ Неверный номер карты');
+    details = clean.match(/.{1,4}/g).join(' ');
+  } else if (type === 'sbp' || type === 'qiwi') {
+    const clean = raw.replace(/\D/g, '');
+    if (clean.length < 10 || clean.length > 11) return toast('❌ Неверный номер');
+    details = (clean.length === 10 ? '+7' : '+') + clean;
+  }
+  const uid = getUserId();
+  if (!STATE.data.userWallets[uid]) STATE.data.userWallets[uid] = {};
+  STATE.data.userWallets[uid][type] = {
+    details, added: nowISO()
+  };
+  saveData();
+  closeModal();
+  toast('✅ Кошелёк добавлен');
+  render();
+}
+
+/* ============================================================
+   SCREEN: TOPUP
+   ============================================================ */
+function screenTopup() {
+  return `
+    <div class="header"><button class="back-btn" onclick="go('profile')">←</button><h1>Пополнение</h1></div>
+    <div class="field">
+      <label>💰 Сумма пополнения (мин. 100 ₽)</label>
+      <input id="topup-amount" type="number" class="input" placeholder="500" min="100">
+    </div>
+    <button class="btn btn-primary" onclick="submitTopup()">➡️ Продолжить</button>
+  `;
+}
+
+function submitTopup() {
+  const amount = parseFloat(document.getElementById('topup-amount').value);
+  if (!amount || amount < 100) return toast('❌ Минимум 100 ₽');
+  const uid = getUserId();
+  const topupId = 'topup_' + uid + '_' + Date.now();
+  STATE.data.pendingTopups[topupId] = {
+    user_id: uid, amount, status: 'waiting_payment', created_at: nowISO()
+  };
+  saveData();
+  openModal(`
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3>💳 Реквизиты для оплаты</h3>
+    <div class="card">
+      <div class="item-row"><span class="item-label">Сумма</span><span class="item-value">${fmtMoney(amount)}</span></div>
+      <div class="item-row"><span class="item-label">Счёт</span><span class="item-value code">${CONFIG.ADMIN_WALLET}</span></div>
+      <button class="copy-btn" onclick="copyText('${CONFIG.ADMIN_WALLET}')">📋 Копировать реквизиты</button>
+    </div>
+    <button class="btn btn-primary" onclick="confirmTopup('${topupId}')">✅ Я оплатил</button>
+  `);
+}
+
+function confirmTopup(topupId) {
+  STATE.data.pendingTopups[topupId].status = 'pending_verification';
+  saveData();
+  closeModal();
+  toast('⏳ Оплата на проверке у администратора');
+  go('profile');
+}
+
+/* ============================================================
+   SCREEN: SUPPORT
+   ============================================================ */
+function screenSupport() {
+  return `
+    <div class="header"><button class="back-btn" onclick="go('main')">←</button><h1>Поддержка</h1></div>
+    <div class="card" style="text-align:center;">
+      <div style="font-size:48px;margin-bottom:8px;">🆘</div>
+      <div class="item-title">Свяжитесь с нами</div>
+      <div style="font-size:14px;color:var(--hint);margin:8px 0;">Онлайн 24/7</div>
+      <button class="btn btn-primary" onclick="tg && tg.openTelegramLink ? tg.openTelegramLink('https://t.me/${CONFIG.SUPPORT.slice(1)}') : window.open('https://t.me/${CONFIG.SUPPORT.slice(1)}','_blank')">💬 Написать ${CONFIG.SUPPORT}</button>
+    </div>
+  `;
+}
+
+/* ============================================================
+   SCREEN: RATINGS (pending)
+   ============================================================ */
+function screenRatings() {
+  const uid = getUserId();
+  const list = STATE.data.pendingRatings[uid] || [];
+  if (!list.length) {
+    return `<div class="header"><button class="back-btn" onclick="go('main')">←</button><h1>Оценки</h1></div>
+      <div class="empty"><div class="icon">✅</div><p>Нет ожидающих оценок</p></div>`;
+  }
+  return `
+    <div class="header"><button class="back-btn" onclick="go('main')">←</button><h1>Оценки (${list.length})</h1></div>
+    ${list.map((r, i) => `
+      <div class="card">
+        <div class="item-title">Сделка ${esc(r.tradeId)}</div>
+        <div style="font-size:13px;color:var(--hint);margin:4px 0 12px;">Оцените пользователя @${esc(r.targetUsername)}</div>
+        <div class="rating-input" id="rating-${i}">
+          ${[1,2,3,4,5].map(n => `<button class="star" onclick="setRating(${i},${n})" data-star="${n}">⭐</button>`).join('')}
+        </div>
+        <button class="btn btn-primary" onclick="submitRating(${i})">Отправить оценку</button>
+      </div>
+    `).join('')}
+  `;
+}
+
+let ratingTemp = {};
+function setRating(idx, n) {
+  ratingTemp[idx] = n;
+  const cont = document.getElementById('rating-' + idx);
+  cont.querySelectorAll('.star').forEach(s => {
+    s.classList.toggle('active', parseInt(s.dataset.star) <= n);
+  });
+}
+function submitRating(idx) {
+  if (!ratingTemp[idx]) return toast('❌ Выберите оценку');
+  const uid = getUserId();
+  const r = STATE.data.pendingRatings[uid][idx];
+  ensureUserStats(r.targetId);
+  const s = STATE.data.userStats[r.targetId];
+  s.total_rating += ratingTemp[idx];
+  s.rating_count += 1;
+  s.average_rating = Math.round((s.total_rating / s.rating_count) * 100) / 100;
+  STATE.data.pendingRatings[uid].splice(idx, 1);
+  if (!STATE.data.pendingRatings[uid].length) delete STATE.data.pendingRatings[uid];
+  saveData();
+  delete ratingTemp[idx];
+  toast('⭐ Спасибо за оценку!');
+  render();
+}
+
+/* ============================================================
+   ADMIN PANEL
+   ============================================================ */
+function screenAdmin() {
+  if (!isAdmin()) return screenMain();
+  const trades = Object.values(STATE.data.trades);
+  const pendingPay = trades.filter(t => t.status === 'pending_verification').length;
+  const pendingTopups = Object.values(STATE.data.pendingTopups).filter(t => t.status === 'pending_verification').length;
+  const completed = trades.filter(t => t.status === 'completed').length;
+  const active = trades.filter(t => ['waiting_payment','pending_verification','payment_confirmed','nft_sent'].includes(t.status)).length;
+
+  return `
+    <div class="header"><button class="back-btn" onclick="go('main')">←</button><h1>🔧 Админ-панель</h1></div>
+
+    <div class="card">
+      <div class="card-title">📊 Статистика</div>
+      <div class="item-row"><span class="item-label">Всего сделок</span><span class="item-value">${trades.length}</span></div>
+      <div class="item-row"><span class="item-label">Завершено</span><span class="item-value">${completed}</span></div>
+      <div class="item-row"><span class="item-label">Активных</span><span class="item-value">${active}</span></div>
+      <div class="item-row"><span class="item-label">Ожидают оплаты (проверка)</span><span class="item-value">${pendingPay}</span></div>
+      <div class="item-row"><span class="item-label">Пополнения на проверке</span><span class="item-value">${pendingTopups}</span></div>
+      <div class="item-row"><span class="item-label">Администраторов</span><span class="item-value">${STATE.data.admins.length}</span></div>
+    </div>
+
+    <button class="menu-btn" onclick="go('admin-trades')">
+      <span class="icon">📋</span>Все сделки<span class="arrow">›</span>
+    </button>
+    <button class="menu-btn" onclick="go('admin-topups')">
+      <span class="icon">💳</span>Запросы пополнений ${pendingTopups ? `<span class="badge">${pendingTopups}</span>` : ''}<span class="arrow">›</span>
+    </button>
+    <button class="menu-btn" onclick="go('admin-manage')">
+      <span class="icon">👑</span>Администраторы<span class="arrow">›</span>
+    </button>
+  `;
+}
+
+function screenAdminTrades() {
+  if (!isAdmin()) return screenMain();
+  const trades = Object.entries(STATE.data.trades).sort((a, b) => new Date(b[1].created_at) - new Date(a[1].created_at));
+  return `
+    <div class="header"><button class="back-btn" onclick="go('admin')">←</button><h1>Все сделки</h1></div>
+    ${trades.length ? trades.map(([id, t]) => `
+      <div class="item" onclick="go('trade-view',{tradeId:'${id}'})" style="cursor:pointer;">
+        <div class="item-title">${id}</div>
+        <div style="font-size:13px;color:var(--hint);">
+          ${t.status} · ${fmtMoney(t.amount)} · @${esc(t.seller_username)}${t.buyer_username ? ' → @' + esc(t.buyer_username) : ''}
+        </div>
+      </div>
+    `).join('') : '<div class="empty"><div class="icon">📭</div><p>Нет сделок</p></div>'}
+  `;
+}
+
+function screenAdminTopups() {
+  if (!isAdmin()) return screenMain();
+  const list = Object.entries(STATE.data.pendingTopups)
+    .filter(([_, t]) => t.status === 'pending_verification');
+  return `
+    <div class="header"><button class="back-btn" onclick="go('admin')">←</button><h1>Пополнения</h1></div>
+    ${list.length ? list.map(([id, t]) => `
+      <div class="card">
+        <div class="item-row"><span class="item-label">ID пользователя</span><span class="item-value code">${t.user_id}</span></div>
+        <div class="item-row"><span class="item-label">Сумма</span><span class="item-value">${fmtMoney(t.amount)}</span></div>
+        <div class="item-row"><span class="item-label">Дата</span><span class="item-value" style="font-size:12px;">${fmtDate(t.created_at)}</span></div>
+        <div class="btn-row" style="margin-top:12px;">
+          <button class="btn btn-success" onclick="adminApproveTopup('${id}')">✅ Зачислить</button>
+          <button class="btn btn-danger" onclick="adminRejectTopup('${id}')">❌ Отклонить</button>
+        </div>
+      </div>
+    `).join('') : '<div class="empty"><div class="icon">✅</div><p>Нет заявок на пополнение</p></div>'}
+  `;
+}
+
+function adminApproveTopup(topupId) {
+  const t = STATE.data.pendingTopups[topupId];
+  if (!t) return;
+  const cur = STATE.data.userBalances[t.user_id] || 0;
+  STATE.data.userBalances[t.user_id] = cur + t.amount;
+  t.status = 'completed';
+  t.completed_at = nowISO();
+  saveData();
+  toast('✅ Баланс пополнен');
+  render();
+}
+function adminRejectTopup(topupId) {
+  const t = STATE.data.pendingTopups[topupId];
+  if (!t) return;
+  t.status = 'rejected';
+  saveData();
+  toast('❌ Отклонено');
+  render();
+}
+
+function screenAdminManage() {
+  if (!isAdmin()) return screenMain();
+  return `
+    <div class="header"><button class="back-btn" onclick="go('admin')">←</button><h1>Администраторы</h1></div>
+    <div class="card">
+      <div class="card-title">Список (${STATE.data.admins.length})</div>
+      ${STATE.data.admins.map(id => `
+        <div class="item-row" style="padding:10px 0;border-bottom:1px solid rgba(142,142,147,0.15);">
+          <span class="item-value code">${id}${id === getUserId() ? ' (вы)' : ''}${id === CONFIG.MAIN_ADMIN_ID ? ' 👑' : ''}</span>
+          ${id !== CONFIG.MAIN_ADMIN_ID && id !== getUserId() ? `<button class="copy-btn" style="color:var(--danger);" onclick="removeAdmin('${id}')">Удалить</button>` : ''}
+        </div>
+      `).join('')}
+    </div>
+    <button class="btn btn-primary" onclick="promptAddAdmin()">➕ Добавить администратора</button>
+  `;
+}
+
+function promptAddAdmin() {
+  openModal(`
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3>Добавить администратора</h3>
+    <div class="field">
+      <label>ID пользователя (только цифры)</label>
+      <input id="new-admin-id" class="input" placeholder="123456789">
+    </div>
+    <button class="btn btn-primary" onclick="confirmAddAdmin()">✅ Добавить</button>
+  `);
+}
+
+function confirmAddAdmin() {
+  const id = document.getElementById('new-admin-id').value.trim();
+  if (!/^\d+$/.test(id)) return toast('❌ ID должен содержать только цифры');
+  if (STATE.data.admins.includes(id)) return toast('❌ Уже администратор');
+  STATE.data.admins.push(id);
+  saveData();
+  closeModal();
+  toast('✅ Администратор добавлен');
+  render();
+}
+
+function removeAdmin(id) {
+  if (id === CONFIG.MAIN_ADMIN_ID) return toast('❌ Нельзя удалить главного админа');
+  STATE.data.admins = STATE.data.admins.filter(a => a !== id);
+  saveData();
+  toast('✅ Администратор удалён');
+  render();
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render() {
+  const screens = {
+    'main': screenMain,
+    'profile': screenProfile,
+    'create-trade': screenCreateTrade,
+    'join-trade': screenJoinTrade,
+    'trade-view': screenTradeView,
+    'my-trades': screenMyTrades,
+    'wallets': screenWallets,
+    'add-wallet': screenAddWallet,
+    'topup': screenTopup,
+    'support': screenSupport,
+    'ratings': screenRatings,
+    'admin': screenAdmin,
+    'admin-trades': screenAdminTrades,
+    'admin-topups': screenAdminTopups,
+    'admin-manage': screenAdminManage
+  };
+  const fn = screens[STATE.currentScreen] || screenMain;
+  document.getElementById('app').innerHTML = fn();
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init() {
+  if (tg && tg.initDataUnsafe?.user) {
+    STATE.tgUser = tg.initDataUnsafe.user;
+  }
+  loadData();
+
+  // Проверка ссылки ?trade=... (для прямых ссылок)
+  const params = new URLSearchParams(location.search);
+  const tradeParam = params.get('trade');
+
+  if (tradeParam && STATE.data.trades[tradeParam]) {
+    go('trade-view', { tradeId: tradeParam });
+  } else {
+    go('main');
+  }
+
+  // Проверка pending ratings при старте
+  const uid = getUserId();
+  const pending = STATE.data.pendingRatings[uid] || [];
+  if (pending.length > 0) {
+    setTimeout(() => toast(`⭐ У вас ${pending.length} незавершённых оценок`), 600);
+  }
+}
+
+init();
+</script>
 </body>
 </html>
