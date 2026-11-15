@@ -11,8 +11,8 @@ from parser import MrktParser
 logging.basicConfig(level=logging.INFO)
 
 # FILL: вставь токен от @BotFather
-BOT_TOKEN = "9254789151:AAEZVzTwkydtrrW-DCTUn37VX4cjx589KW0"
-
+import os
+BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 db = Database()
