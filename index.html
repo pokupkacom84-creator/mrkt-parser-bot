@@ -3,207 +3,445 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>NFT Trading Bot</title>
+<title>NFT Escrow</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root {
     --bg: var(--tg-theme-bg-color, #ffffff);
-    --text: var(--tg-theme-text-color, #000000);
+    --text: var(--tg-theme-text-color, #1a1a1a);
     --hint: var(--tg-theme-hint-color, #8e8e93);
     --link: var(--tg-theme-link-color, #2481cc);
     --btn: var(--tg-theme-button-color, #2481cc);
     --btn-text: var(--tg-theme-button-text-color, #ffffff);
     --sec-bg: var(--tg-theme-secondary-bg-color, #f2f2f7);
+    --nav-bg: var(--tg-theme-secondary-bg-color, #ffffff);
     --danger: #ff3b30;
     --success: #34c759;
     --warn: #ff9500;
-    --card-radius: 14px;
+    --gold: #ffb400;
+    --radius: 16px;
+    --radius-sm: 12px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 8px 28px rgba(0,0,0,0.12);
   }
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
   html, body {
-    margin: 0; padding: 0;
-    background: var(--bg);
-    color: var(--text);
+    background: var(--bg); color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-    font-size: 16px;
-    min-height: 100vh;
-    overflow-x: hidden;
+    font-size: 15px; line-height: 1.4;
+    min-height: 100vh; overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
   }
-  body { padding-bottom: env(safe-area-inset-bottom); }
-  .app { max-width: 500px; margin: 0 auto; padding: 16px; }
+  body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
+  .app { max-width: 500px; margin: 0 auto; padding: 0 16px; }
+  .app.standalone { padding-bottom: 16px; }
 
-  /* ---------- HEADER ---------- */
-  .header {
+  /* ---------- TOP HEADER ---------- */
+  .topbar {
     display: flex; align-items: center; gap: 12px;
-    padding: 12px 0 20px;
-    position: sticky; top: 0;
+    padding: 14px 0 18px;
+    position: sticky; top: 0; z-index: 20;
     background: var(--bg);
-    z-index: 10;
   }
-  .back-btn {
-    width: 38px; height: 38px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
+  .topbar .title { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; }
+  .topbar .title small { display: block; font-size: 12px; font-weight: 500; color: var(--hint); letter-spacing: 0; margin-top: 2px; }
+  .topbar-avatar {
+    width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 17px;
+    box-shadow: 0 3px 12px rgba(102,126,234,0.35);
+  }
+  .topbar .spacer { flex: 1; }
+  .icon-btn {
+    width: 42px; height: 42px; border-radius: 50%;
     background: var(--sec-bg); border: none; cursor: pointer;
-    color: var(--text); font-size: 20px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: var(--text); transition: transform 0.1s;
   }
-  .header h1 { font-size: 20px; font-weight: 700; margin: 0; flex: 1; }
-  .header .subtitle { font-size: 13px; color: var(--hint); margin: 2px 0 0; font-weight: 400; }
+  .icon-btn:active { transform: scale(0.92); }
+
+  .back-btn {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--sec-bg); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: var(--text); flex-shrink: 0;
+  }
+  .back-btn:active { transform: scale(0.92); }
 
   /* ---------- CARDS ---------- */
   .card {
     background: var(--sec-bg);
-    border-radius: var(--card-radius);
+    border-radius: var(--radius);
     padding: 16px;
     margin-bottom: 12px;
   }
-  .card-title { font-size: 13px; color: var(--hint); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-weight: 600; }
-  .card-value { font-size: 22px; font-weight: 700; }
 
-  /* ---------- MENU BUTTONS ---------- */
-  .menu-btn {
-    display: flex; align-items: center; gap: 14px;
-    background: var(--sec-bg); border: none; border-radius: var(--card-radius);
-    padding: 18px 16px; margin-bottom: 10px; width: 100%;
-    color: var(--text); cursor: pointer; text-align: left;
-    font-size: 16px; font-weight: 500; transition: transform 0.08s;
+  /* Balance card - big gradient */
+  .balance-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px; padding: 20px;
+    color: #fff; margin-bottom: 14px;
+    position: relative; overflow: hidden;
+    box-shadow: 0 8px 28px rgba(102,126,234,0.35);
   }
-  .menu-btn:active { transform: scale(0.98); }
-  .menu-btn .icon { font-size: 22px; width: 32px; text-align: center; flex-shrink: 0; }
-  .menu-btn .arrow { margin-left: auto; color: var(--hint); font-size: 18px; }
-  .menu-btn .badge {
-    background: var(--danger); color: #fff; border-radius: 10px;
-    padding: 2px 8px; font-size: 12px; font-weight: 700; margin-left: auto;
+  .balance-card::before {
+    content: ''; position: absolute; top: -50%; right: -20%;
+    width: 220px; height: 220px; border-radius: 50%;
+    background: rgba(255,255,255,0.08);
   }
+  .balance-card::after {
+    content: ''; position: absolute; bottom: -60%; left: -20%;
+    width: 180px; height: 180px; border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+  }
+  .balance-label { font-size: 13px; opacity: 0.85; font-weight: 500; margin-bottom: 6px; position: relative; z-index: 1; }
+  .balance-value { font-size: 32px; font-weight: 800; letter-spacing: -1px; position: relative; z-index: 1; margin-bottom: 16px; }
+  .balance-value small { font-size: 18px; opacity: 0.8; font-weight: 600; }
+  .balance-actions { display: flex; gap: 8px; position: relative; z-index: 1; }
+  .balance-actions button {
+    flex: 1; padding: 11px; border-radius: 12px; border: none;
+    background: rgba(255,255,255,0.2); color: #fff;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    backdrop-filter: blur(8px); transition: transform 0.1s;
+    font-family: inherit;
+  }
+  .balance-actions button:active { transform: scale(0.96); background: rgba(255,255,255,0.3); }
 
-  /* ---------- FORM ---------- */
-  .field { margin-bottom: 14px; }
-  .field label { display: block; font-size: 13px; color: var(--hint); margin-bottom: 6px; font-weight: 500; }
-  .input, textarea {
-    width: 100%; padding: 14px 16px;
-    background: var(--sec-bg); border: 1.5px solid transparent;
-    border-radius: 12px; color: var(--text);
-    font-size: 16px; font-family: inherit; outline: none;
-    transition: border-color 0.15s;
+  /* Trust badge */
+  .trust-banner {
+    display: flex; align-items: center; gap: 10px;
+    background: linear-gradient(135deg, rgba(52,199,89,0.12), rgba(52,199,89,0.06));
+    border: 1px solid rgba(52,199,89,0.25);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px; margin-bottom: 14px;
   }
-  .input:focus, textarea:focus { border-color: var(--btn); }
-  textarea { resize: vertical; min-height: 80px; }
+  .trust-banner .icon { font-size: 22px; }
+  .trust-banner .text { font-size: 13px; color: var(--text); line-height: 1.35; }
+  .trust-banner .text b { color: var(--success); }
+
+  /* Quick actions grid */
+  .quick-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 16px;
+  }
+  .quick-card {
+    background: var(--sec-bg); border: none; border-radius: var(--radius);
+    padding: 16px; cursor: pointer; text-align: left;
+    font-family: inherit; color: var(--text);
+    transition: transform 0.1s, background 0.15s;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .quick-card:active { transform: scale(0.97); }
+  .quick-card .q-icon {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .quick-card .q-title { font-size: 15px; font-weight: 600; }
+  .quick-card .q-sub { font-size: 12px; color: var(--hint); }
+
+  /* ---------- SECTION ---------- */
+  .section-title {
+    font-size: 17px; font-weight: 700;
+    margin: 20px 0 10px; letter-spacing: -0.3px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .section-title .link { font-size: 13px; color: var(--link); font-weight: 600; cursor: pointer; background: none; border: none; font-family: inherit; }
+
+  /* ---------- ITEM ---------- */
+  .item {
+    background: var(--sec-bg); border-radius: var(--radius-sm);
+    padding: 14px; margin-bottom: 8px;
+    transition: transform 0.1s;
+  }
+  .item.clickable { cursor: pointer; }
+  .item.clickable:active { transform: scale(0.98); }
+  .item-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .item-sub { font-size: 13px; color: var(--hint); }
+  .item-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .item-row:last-child { margin-bottom: 0; }
+  .item-label { color: var(--hint); font-size: 13px; }
+  .item-value { font-weight: 600; font-size: 14px; word-break: break-all; text-align: right; }
+  .item-value.mono { font-family: 'SF Mono', Menlo, monospace; font-size: 13px; }
+
+  /* ---------- STATUS PILLS ---------- */
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+  }
+  .pill.waiting { background: rgba(255,149,0,0.15); color: var(--warn); }
+  .pill.pending { background: rgba(255,149,0,0.15); color: var(--warn); }
+  .pill.active { background: rgba(36,129,204,0.15); color: var(--link); }
+  .pill.completed { background: rgba(52,199,89,0.15); color: var(--success); }
+  .pill.cancelled { background: rgba(142,142,147,0.15); color: var(--hint); }
+  .pill.rejected { background: rgba(255,59,48,0.15); color: var(--danger); }
 
   /* ---------- BUTTONS ---------- */
   .btn {
-    display: block; width: 100%; padding: 15px;
-    border: none; border-radius: 12px; font-size: 16px; font-weight: 600;
-    cursor: pointer; transition: transform 0.08s, opacity 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; padding: 15px;
+    border: none; border-radius: var(--radius-sm);
+    font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: transform 0.1s, opacity 0.15s;
     font-family: inherit;
   }
   .btn:active { transform: scale(0.98); }
   .btn-primary { background: var(--btn); color: var(--btn-text); }
   .btn-secondary { background: var(--sec-bg); color: var(--text); }
-  .btn-danger { background: var(--danger); color: #fff; }
-  .btn-success { background: var(--success); color: #fff; }
+  .btn-danger { background: rgba(255,59,48,0.12); color: var(--danger); }
+  .btn-success { background: rgba(52,199,89,0.12); color: var(--success); }
+  .btn-gold { background: linear-gradient(135deg, #ffb400, #ff8800); color: #fff; }
   .btn + .btn { margin-top: 8px; }
   .btn-row { display: flex; gap: 8px; }
   .btn-row .btn { margin-top: 0; flex: 1; }
 
-  /* ---------- ITEM LIST ---------- */
-  .item {
-    background: var(--sec-bg); border-radius: 12px;
-    padding: 14px; margin-bottom: 8px;
+  /* ---------- INPUTS ---------- */
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 13px; color: var(--hint); margin-bottom: 6px; font-weight: 600; }
+  .input, textarea {
+    width: 100%; padding: 14px 16px;
+    background: var(--sec-bg); border: 2px solid transparent;
+    border-radius: var(--radius-sm); color: var(--text);
+    font-size: 16px; font-family: inherit; outline: none;
+    transition: border-color 0.15s, background 0.15s;
   }
-  .item-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-  .item-row:last-child { margin-bottom: 0; }
-  .item-label { color: var(--hint); font-size: 13px; }
-  .item-value { font-weight: 600; font-size: 14px; word-break: break-all; }
-  .item-value.code { font-family: 'SF Mono', Menlo, monospace; font-size: 13px; }
-  .item-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
-
-  /* ---------- STATUS ---------- */
-  .status {
-    display: inline-block; padding: 3px 10px;
-    border-radius: 20px; font-size: 12px; font-weight: 600;
+  .input:focus, textarea:focus {
+    border-color: var(--btn);
+    background: var(--bg);
   }
-  .status-waiting { background: rgba(255,149,0,0.15); color: var(--warn); }
-  .status-pending { background: rgba(255,149,0,0.15); color: var(--warn); }
-  .status-active { background: rgba(36,129,204,0.15); color: var(--link); }
-  .status-completed { background: rgba(52,199,89,0.15); color: var(--success); }
-  .status-cancelled { background: rgba(142,142,147,0.15); color: var(--hint); }
-  .status-rejected { background: rgba(255,59,48,0.15); color: var(--danger); }
+  textarea { resize: vertical; min-height: 90px; }
 
-  /* ---------- STARS ---------- */
-  .stars { color: #ffb400; letter-spacing: 1px; }
-
-  /* ---------- MODAL / TOAST ---------- */
-  .toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
-    background: rgba(0,0,0,0.85); color: #fff; padding: 12px 20px;
-    border-radius: 24px; font-size: 14px; font-weight: 500;
-    transition: transform 0.3s; z-index: 9999; max-width: 90vw; text-align: center;
+  /* ---------- PROFILE ---------- */
+  .profile-hero {
+    text-align: center; padding: 24px 16px 16px;
   }
-  .toast.show { transform: translateX(-50%) translateY(0); }
-
-  .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-    display: none; align-items: flex-end; justify-content: center;
-    z-index: 1000; padding: 0;
+  .avatar-xl {
+    width: 88px; height: 88px; border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 34px;
+    margin: 0 auto 14px;
+    box-shadow: 0 8px 24px rgba(102,126,234,0.35);
+    position: relative;
   }
-  .modal-overlay.show { display: flex; }
-  .modal {
-    background: var(--bg); border-radius: 20px 20px 0 0;
-    padding: 20px; width: 100%; max-width: 500px;
-    animation: slideUp 0.25s ease-out;
+  .avatar-xl .status-dot {
+    position: absolute; bottom: 4px; right: 4px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--success); border: 3px solid var(--bg);
   }
-  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-  .modal h3 { margin: 0 0 12px; font-size: 18px; }
-  .modal-close { float: right; background: var(--sec-bg); border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px; }
+  .profile-name { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; margin-bottom: 6px; }
+  .badges { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .badge-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .badge-premium {
+    background: linear-gradient(135deg, #ffb400, #ff8800);
+    color: #fff;
+  }
+  .badge-verified {
+    background: rgba(36,129,204,0.15); color: var(--link);
+  }
+  .badge-admin {
+    background: linear-gradient(135deg, #ff3b30, #ff9500);
+    color: #fff;
+  }
+  .profile-id {
+    font-size: 12px; color: var(--hint);
+    font-family: 'SF Mono', Menlo, monospace;
+    padding: 4px 10px; background: var(--sec-bg);
+    border-radius: 8px; display: inline-block;
+  }
 
-  /* ---------- SCREEN ---------- */
-  .screen { display: none; }
-  .screen.active { display: block; animation: fadeIn 0.2s; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  /* Level card */
+  .level-card {
+    background: var(--sec-bg); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 12px;
+  }
+  .level-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .level-name { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; }
+  .level-name .icon { font-size: 24px; }
+  .level-count { font-size: 12px; color: var(--hint); font-weight: 600; }
+  .progress {
+    height: 8px; background: rgba(142,142,147,0.2);
+    border-radius: 100px; overflow: hidden; position: relative;
+  }
+  .progress-bar {
+    height: 100%; border-radius: 100px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    transition: width 0.4s ease;
+  }
+  .progress-hint { font-size: 12px; color: var(--hint); margin-top: 8px; text-align: center; }
 
-  /* ---------- ADMIN ---------- */
-  .admin-badge {
-    display: inline-block; background: linear-gradient(135deg, #ffb400, #ff8800);
-    color: #fff; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
-    margin-left: 6px;
+  /* Stats grid */
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px; margin-bottom: 12px;
+  }
+  .stat-box {
+    background: var(--sec-bg); border-radius: var(--radius-sm);
+    padding: 14px 8px; text-align: center;
+  }
+  .stat-box .val { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 2px; }
+  .stat-box .lbl { font-size: 11px; color: var(--hint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .stat-box .val.gold { color: var(--gold); }
+
+  /* ---------- TRADE ITEM ---------- */
+  .trade-item {
+    background: var(--sec-bg); border-radius: var(--radius-sm);
+    padding: 14px; margin-bottom: 10px; cursor: pointer;
+    transition: transform 0.1s;
+    position: relative; overflow: hidden;
+  }
+  .trade-item:active { transform: scale(0.98); }
+  .trade-item .head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px; }
+  .trade-item .id { font-size: 12px; color: var(--hint); font-weight: 600; font-family: 'SF Mono', Menlo, monospace; }
+  .trade-item .nft { font-size: 14px; font-weight: 600; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .trade-item .foot { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--hint); }
+  .trade-item .amount { font-weight: 700; color: var(--text); font-size: 15px; }
+
+  /* ---------- BOTTOM NAV ---------- */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--bg);
+    border-top: 1px solid rgba(142,142,147,0.15);
+    display: flex; justify-content: space-around;
+    padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+    z-index: 100;
+    backdrop-filter: blur(20px);
+  }
+  .nav-btn {
+    background: none; border: none; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 6px 16px; border-radius: 12px;
+    color: var(--hint); font-family: inherit;
+    transition: color 0.15s, transform 0.1s;
+    position: relative;
+    flex: 1; max-width: 90px;
+  }
+  .nav-btn:active { transform: scale(0.92); }
+  .nav-btn .n-icon { font-size: 22px; line-height: 1; }
+  .nav-btn .n-label { font-size: 10px; font-weight: 600; }
+  .nav-btn.active { color: var(--btn); }
+  .nav-btn.active .n-icon { transform: translateY(-1px); }
+  .nav-btn .n-badge {
+    position: absolute; top: 0; right: calc(50% - 20px);
+    background: var(--danger); color: #fff;
+    font-size: 10px; font-weight: 700;
+    min-width: 16px; height: 16px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 4px;
   }
 
   /* ---------- EMPTY ---------- */
-  .empty { text-align: center; padding: 40px 20px; color: var(--hint); }
-  .empty .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.6; }
-  .empty p { margin: 0; font-size: 14px; }
+  .empty {
+    text-align: center; padding: 48px 20px;
+    color: var(--hint);
+  }
+  .empty .icon { font-size: 52px; margin-bottom: 12px; opacity: 0.5; }
+  .empty .title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .empty .desc { font-size: 13px; }
+
+  /* ---------- TOAST ---------- */
+  .toast {
+    position: fixed; bottom: calc(90px + env(safe-area-inset-bottom));
+    left: 50%; transform: translateX(-50%) translateY(20px);
+    background: rgba(30,30,30,0.92); color: #fff;
+    padding: 12px 20px; border-radius: 24px;
+    font-size: 14px; font-weight: 500;
+    transition: transform 0.25s, opacity 0.25s;
+    z-index: 9999; max-width: calc(100vw - 32px);
+    text-align: center; opacity: 0; pointer-events: none;
+    backdrop-filter: blur(10px);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* ---------- MODAL ---------- */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    display: none; align-items: flex-end; justify-content: center;
+    z-index: 1000; backdrop-filter: blur(4px);
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--bg); border-radius: 24px 24px 0 0;
+    padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+    width: 100%; max-width: 500px;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 90vh; overflow-y: auto;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-grabber {
+    width: 40px; height: 4px; border-radius: 2px;
+    background: rgba(142,142,147,0.3);
+    margin: 0 auto 16px;
+  }
+  .modal h3 { margin-bottom: 16px; font-size: 20px; font-weight: 800; letter-spacing: -0.3px; }
+
+  /* ---------- STAR RATING ---------- */
+  .rating-stars { display: flex; justify-content: center; gap: 8px; margin: 20px 0; }
+  .rating-stars button {
+    background: none; border: none; cursor: pointer;
+    font-size: 42px; padding: 4px; line-height: 1;
+    opacity: 0.25; transition: opacity 0.15s, transform 0.15s;
+    filter: grayscale(1);
+  }
+  .rating-stars button.active { opacity: 1; transform: scale(1.12); filter: grayscale(0); }
+  .rating-stars button:active { transform: scale(0.9); }
+
+  /* ---------- SCREEN ---------- */
+  .screen { display: none; }
+  .screen.active { display: block; animation: fadeIn 0.22s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
   /* ---------- COPY ---------- */
-  .copy-btn {
-    background: transparent; border: none; color: var(--link);
-    font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 8px;
+  .copy-inline {
+    background: none; border: none; cursor: pointer;
+    color: var(--link); font-size: 12px; font-weight: 700;
+    font-family: inherit; padding: 4px 8px;
   }
 
-  /* ---------- RATING STARS ---------- */
-  .rating-input { display: flex; justify-content: center; gap: 12px; margin: 16px 0; }
-  .rating-input .star {
-    font-size: 40px; cursor: pointer; opacity: 0.3; transition: opacity 0.15s, transform 0.15s;
-    background: none; border: none; padding: 0;
+  /* Code block for wallet address */
+  .addr-box {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg); padding: 12px 14px; border-radius: 12px;
+    margin-top: 8px; gap: 8px;
+    border: 1px dashed rgba(142,142,147,0.3);
   }
-  .rating-input .star.active { opacity: 1; transform: scale(1.1); }
+  .addr-box code {
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 13px; word-break: break-all; flex: 1;
+  }
+
+  /* ---------- SKELETON pulse for balance ---------- */
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
 </style>
 </head>
 <body>
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
-<div class="modal-overlay" id="modal-overlay">
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal" id="modal"></div>
 </div>
 
 <script>
 /* ============================================================
-   TELEGRAM WEB APP INIT
+   TELEGRAM INIT
    ============================================================ */
 const tg = window.Telegram?.WebApp;
 if (tg) {
   tg.ready();
   tg.expand();
-  tg.setHeaderColor('secondary_bg_color');
+  tg.setHeaderColor('bg_color');
   tg.setBackgroundColor('bg_color');
+  if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
 }
 
 /* ============================================================
@@ -213,24 +451,21 @@ const CONFIG = {
   ADMIN_WALLET: '2204120133486338',
   SUPPORT: '@GiftGuaranted',
   MAIN_ADMIN_ID: '8295645690',
-  STORAGE_KEY: 'nft_trading_app_v1'
+  STORAGE_KEY: 'nft_escrow_v2'
 };
 
 /* ============================================================
-   STATE & STORAGE
+   STATE
    ============================================================ */
-let STATE = {
-  currentScreen: 'main',
-  screenParams: {},
+const STATE = {
+  screen: 'main',
+  params: {},
   tgUser: null,
+  tab: 'main',
   data: {
-    trades: {},
-    tradeCount: 0,
-    userWallets: {},
-    userBalances: {},
-    userStats: {},
-    pendingRatings: {},
-    pendingTopups: {},
+    trades: {}, tradeCount: 0,
+    userWallets: {}, userBalances: {}, userStats: {},
+    pendingRatings: {}, pendingTopups: {},
     admins: [CONFIG.MAIN_ADMIN_ID]
   }
 };
@@ -239,22 +474,22 @@ function loadData() {
   try {
     const raw = localStorage.getItem(CONFIG.STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw);
-      STATE.data = { ...STATE.data, ...parsed };
-      if (!STATE.data.admins.includes(CONFIG.MAIN_ADMIN_ID)) {
-        STATE.data.admins.push(CONFIG.MAIN_ADMIN_ID);
-      }
+      const p = JSON.parse(raw);
+      Object.assign(STATE.data, p);
+      if (!STATE.data.admins.includes(CONFIG.MAIN_ADMIN_ID)) STATE.data.admins.push(CONFIG.MAIN_ADMIN_ID);
     }
-  } catch (e) { console.error('load error', e); }
+  } catch(e) { console.error(e); }
 }
 function saveData() {
   try { localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(STATE.data)); }
-  catch (e) { console.error('save error', e); }
+  catch(e) { console.error(e); }
 }
 
+/* ============================================================
+   USER HELPERS
+   ============================================================ */
 function getUserId() {
   if (STATE.tgUser) return String(STATE.tgUser.id);
-  // fallback для тестирования в браузере
   if (!localStorage.getItem('_test_uid')) localStorage.setItem('_test_uid', '100000001');
   return localStorage.getItem('_test_uid');
 }
@@ -262,17 +497,37 @@ function getUserName() {
   if (STATE.tgUser) return STATE.tgUser.username || STATE.tgUser.first_name || 'user';
   return 'testuser';
 }
-function isAdmin(uid = getUserId()) {
-  return STATE.data.admins.includes(String(uid));
+function getUserFirst() {
+  if (STATE.tgUser) return STATE.tgUser.first_name || STATE.tgUser.username || 'User';
+  return 'User';
 }
+function getUserInitials() {
+  const n = getUserFirst();
+  return n.slice(0, 2).toUpperCase();
+}
+function isAdmin(uid = getUserId()) { return STATE.data.admins.includes(String(uid)); }
+function isPremium() { return STATE.tgUser?.is_premium || false; }
+
 function ensureUserStats(uid) {
   if (!STATE.data.userStats[uid]) {
     STATE.data.userStats[uid] = {
       completed_trades: 0, total_rating: 0, rating_count: 0,
-      average_rating: 0.0, first_seen: new Date().toISOString()
+      average_rating: 0.0, disputes: 0, first_seen: new Date().toISOString()
     };
     saveData();
   }
+}
+
+function getLevel(trades) {
+  const levels = [
+    { min: 100, name: 'Легенда',   icon: '👑', color: '#ff6b00', next: null },
+    { min: 50,  name: 'Платина',   icon: '💎', color: '#00bfff', next: 100 },
+    { min: 30,  name: 'Золото',    icon: '🥇', color: '#ffb400', next: 50 },
+    { min: 15,  name: 'Серебро',   icon: '🥈', color: '#a0a0a0', next: 30 },
+    { min: 5,   name: 'Бронза',    icon: '🥉', color: '#cd7f32', next: 15 },
+    { min: 0,   name: 'Новичок',   icon: '🌱', color: '#34c759', next: 5 }
+  ];
+  return levels.find(l => trades >= l.min) || levels[levels.length - 1];
 }
 
 /* ============================================================
@@ -282,15 +537,21 @@ function toast(msg, ms = 2200) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove('show'), ms);
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), ms);
 }
-function fmtMoney(n) { return Number(n).toLocaleString('ru-RU') + ' ₽'; }
+function fmtMoney(n) { return Number(n).toLocaleString('ru-RU'); }
+function fmtMoneyFull(n) { return fmtMoney(n) + ' ₽'; }
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function nowISO() { return new Date().toISOString(); }
 function fmtDate(iso) {
   const d = new Date(iso);
-  return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const now = new Date();
+  const diff = (now - d) / 1000;
+  if (diff < 60) return 'только что';
+  if (diff < 3600) return Math.floor(diff/60) + ' мин назад';
+  if (diff < 86400) return Math.floor(diff/3600) + ' ч назад';
+  return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 function copyText(text) {
   if (navigator.clipboard) {
@@ -303,7 +564,7 @@ function copyText(text) {
   }
 }
 function openModal(html) {
-  document.getElementById('modal').innerHTML = html;
+  document.getElementById('modal').innerHTML = `<div class="modal-grabber"></div>` + html;
   document.getElementById('modal-overlay').classList.add('show');
 }
 function closeModal() {
@@ -314,10 +575,44 @@ function closeModal() {
    NAVIGATION
    ============================================================ */
 function go(screen, params = {}) {
-  STATE.currentScreen = screen;
-  STATE.screenParams = params;
+  STATE.screen = screen;
+  STATE.params = params;
   render();
-  window.scrollTo(0, 0);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function setTab(tab) {
+  STATE.tab = tab;
+  const map = { main: 'main', trades: 'my-trades', wallets: 'wallets', profile: 'profile' };
+  go(map[tab] || 'main');
+}
+
+/* ============================================================
+   BOTTOM NAV
+   ============================================================ */
+function renderNav() {
+  const uid = getUserId();
+  const pendingRatings = (STATE.data.pendingRatings[uid] || []).length;
+  const myTrades = Object.values(STATE.data.trades)
+    .filter(t => t.seller_id === uid || t.buyer_id === uid)
+    .filter(t => ['waiting_payment','pending_verification','payment_confirmed','nft_sent'].includes(t.status)).length;
+
+  const tabs = [
+    { id: 'main',    icon: '🏠', label: 'Главная' },
+    { id: 'trades',  icon: '📋', label: 'Сделки', badge: myTrades || null },
+    { id: 'wallets', icon: '💼', label: 'Кошельки' },
+    { id: 'profile', icon: '👤', label: 'Профиль', badge: pendingRatings || null }
+  ];
+
+  return `<nav class="bottom-nav">
+    ${tabs.map(t => `
+      <button class="nav-btn ${STATE.tab === t.id ? 'active' : ''}" onclick="setTab('${t.id}')">
+        <span class="n-icon">${t.icon}</span>
+        <span class="n-label">${t.label}</span>
+        ${t.badge ? `<span class="n-badge">${t.badge > 9 ? '9+' : t.badge}</span>` : ''}
+      </button>
+    `).join('')}
+  </nav>`;
 }
 
 /* ============================================================
@@ -325,49 +620,102 @@ function go(screen, params = {}) {
    ============================================================ */
 function screenMain() {
   const uid = getUserId();
-  const name = getUserName();
   ensureUserStats(uid);
+  const stats = STATE.data.userStats[uid];
+  const bal = STATE.data.userBalances[uid] || 0;
+  const level = getLevel(stats.completed_trades);
   const admin = isAdmin(uid);
-  const pendingRatings = STATE.data.pendingRatings[uid] || [];
-  const ratingBadge = pendingRatings.length ? `<span class="badge">${pendingRatings.length}</span>` : '';
+  const pendingRatings = (STATE.data.pendingRatings[uid] || []).length;
 
   return `
-    <div class="header">
-      <div>
-        <h1>🎨 NFT Trading</h1>
-        <p class="subtitle">Привет, ${esc(name)}!${admin ? '<span class="admin-badge">ADMIN</span>' : ''}</p>
+    <div class="topbar">
+      <div class="topbar-avatar">${getUserInitials()}</div>
+      <div style="flex:1;">
+        <div class="title" style="font-size:17px;">Привет, ${esc(getUserFirst())} 👋</div>
+        <div style="font-size:12px;color:var(--hint);margin-top:2px;">${level.icon} ${level.name}${admin ? ' · <span style="color:var(--warn);font-weight:700;">ADMIN</span>' : ''}</div>
+      </div>
+      ${isPremium() ? '<span style="font-size:20px;">⭐</span>' : ''}
+      <button class="icon-btn" onclick="go('support')">💬</button>
+    </div>
+
+    <div class="balance-card">
+      <div class="balance-label">💰 Ваш баланс</div>
+      <div class="balance-value">${fmtMoney(bal)}<small> ₽</small></div>
+      <div class="balance-actions">
+        <button onclick="go('topup')">＋ Пополнить</button>
+        <button onclick="go('withdraw')">↗ Вывести</button>
       </div>
     </div>
 
-    ${pendingRatings.length ? `
-      <div class="card" style="background:linear-gradient(135deg,rgba(255,180,0,0.15),rgba(255,136,0,0.15));border:1px solid rgba(255,180,0,0.3);">
-        <div class="card-title">⭐ Оцените сделку</div>
-        <div style="font-size:14px;margin-bottom:10px;">У вас есть ${pendingRatings.length} незавершённая оценка.</div>
-        <button class="btn btn-primary" onclick="go('ratings')">Перейти к оценкам</button>
+    <div class="trust-banner">
+      <div class="icon">🛡️</div>
+      <div class="text">
+        <b>Гарант-сервис</b> — все сделки под защитой.
+        Средства замораживаются до подтверждения передачи NFT.
+      </div>
+    </div>
+
+    ${pendingRatings ? `
+      <div class="card" style="background:linear-gradient(135deg,rgba(255,180,0,0.15),rgba(255,136,0,0.08));border:1px solid rgba(255,180,0,0.35);">
+        <div class="item-row">
+          <div>
+            <div style="font-size:15px;font-weight:700;">⭐ Оцените сделку</div>
+            <div style="font-size:13px;color:var(--hint);margin-top:2px;">${pendingRatings} незавершённых оценок</div>
+          </div>
+          <button class="btn btn-gold" style="width:auto;padding:10px 16px;margin:0;" onclick="go('ratings')">Оценить</button>
+        </div>
       </div>
     ` : ''}
 
-    <button class="menu-btn" onclick="go('create-trade')">
-      <span class="icon">💰</span><span>Создать сделку</span><span class="arrow">›</span>
-    </button>
-    <button class="menu-btn" onclick="go('join-trade')">
-      <span class="icon">🔗</span><span>Присоединиться к сделке</span><span class="arrow">›</span>
-    </button>
-    <button class="menu-btn" onclick="go('profile')">
-      <span class="icon">👤</span><span>Профиль</span><span class="arrow">›</span>
-    </button>
-    <button class="menu-btn" onclick="go('wallets')">
-      <span class="icon">💼</span><span>Кошельки</span><span class="arrow">›</span>
-    </button>
-    <button class="menu-btn" onclick="go('my-trades')">
-      <span class="icon">📊</span><span>Мои сделки</span><span class="arrow">›</span>
-    </button>
-    <button class="menu-btn" onclick="go('support')">
-      <span class="icon">🆘</span><span>Поддержка</span><span class="arrow">›</span>
-    </button>
-    ${admin ? `<button class="menu-btn" onclick="go('admin')" style="background:linear-gradient(135deg,rgba(255,180,0,0.15),rgba(255,136,0,0.15));">
-      <span class="icon">🔧</span><span>Админ-панель</span><span class="arrow">›</span>
-    </button>` : ''}
+    <div class="section-title">Быстрые действия</div>
+    <div class="quick-grid">
+      <button class="quick-card" onclick="go('create-trade')">
+        <div class="q-icon" style="background:rgba(36,129,204,0.15);">💰</div>
+        <div>
+          <div class="q-title">Создать сделку</div>
+          <div class="q-sub">Продать NFT</div>
+        </div>
+      </button>
+      <button class="quick-card" onclick="go('join-trade')">
+        <div class="q-icon" style="background:rgba(52,199,89,0.15);">🔗</div>
+        <div>
+          <div class="q-title">Присоединиться</div>
+          <div class="q-sub">Купить по ID</div>
+        </div>
+      </button>
+      <button class="quick-card" onclick="setTab('trades')">
+        <div class="q-icon" style="background:rgba(255,180,0,0.15);">📋</div>
+        <div>
+          <div class="q-title">Мои сделки</div>
+          <div class="q-sub">${stats.completed_trades} завершено</div>
+        </div>
+      </button>
+      <button class="quick-card" onclick="go('support')">
+        <div class="q-icon" style="background:rgba(255,59,48,0.15);">🆘</div>
+        <div>
+          <div class="q-title">Поддержка</div>
+          <div class="q-sub">24/7 онлайн</div>
+        </div>
+      </button>
+    </div>
+
+    ${admin ? `
+      <div class="section-title">Панель управления</div>
+      <button class="item clickable" style="width:100%;text-align:left;background:linear-gradient(135deg,rgba(255,180,0,0.15),rgba(255,136,0,0.08));border:1px solid rgba(255,180,0,0.3);" onclick="go('admin')">
+        <div class="item-row">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:22px;">🔧</span>
+            <div>
+              <div class="item-title">Админ-панель</div>
+              <div class="item-sub">Управление ботом</div>
+            </div>
+          </div>
+          <span style="color:var(--hint);font-size:20px;">›</span>
+        </div>
+      </button>
+    ` : ''}
+
+    ${renderNav()}
   `;
 }
 
@@ -379,35 +727,107 @@ function screenProfile() {
   ensureUserStats(uid);
   const s = STATE.data.userStats[uid];
   const bal = STATE.data.userBalances[uid] || 0;
-  const stars = '⭐'.repeat(Math.round(s.average_rating)) || '⭕';
+  const level = getLevel(s.completed_trades);
   const admin = isAdmin(uid);
+  const premium = isPremium();
+
+  // Progress to next level
+  let progress = 100, nextHint = 'Максимальный уровень!';
+  if (level.next) {
+    const prevMin = level.min;
+    progress = Math.round(((s.completed_trades - prevMin) / (level.next - prevMin)) * 100);
+    nextHint = `${s.completed_trades} / ${level.next} сделок до следующего уровня`;
+  }
+
+  const stars = s.average_rating > 0 ? '⭐'.repeat(Math.round(s.average_rating)) : '';
 
   return `
-    <div class="header">
+    <div class="topbar">
       <button class="back-btn" onclick="go('main')">←</button>
-      <div><h1>Профиль</h1></div>
+      <div style="flex:1;"><div class="title">Профиль</div></div>
+      <button class="icon-btn" onclick="go('support')">💬</button>
     </div>
 
-    <div class="card" style="text-align:center;">
-      <div style="font-size:48px;margin-bottom:8px;">👤</div>
-      <div style="font-size:20px;font-weight:700;">@${esc(getUserName())}</div>
-      <div style="color:var(--hint);font-size:13px;margin-top:4px;">ID: ${uid}${admin ? ' · <span class="admin-badge">ADMIN</span>' : ''}</div>
+    <div class="profile-hero">
+      <div class="avatar-xl">
+        ${getUserInitials()}
+        <span class="status-dot"></span>
+      </div>
+      <div class="profile-name">${esc(getUserFirst())}</div>
+      <div class="badges">
+        ${premium ? '<span class="badge-chip badge-premium">⭐ PREMIUM</span>' : ''}
+        ${admin ? '<span class="badge-chip badge-admin">👑 ADMIN</span>' : ''}
+        ${s.completed_trades >= 5 ? '<span class="badge-chip badge-verified">✓ Проверен</span>' : ''}
+      </div>
+      <div class="profile-id">@${esc(getUserName())} · ${uid}</div>
     </div>
 
-    <div class="card">
-      <div class="card-title">⭐ Рейтинг</div>
-      <div class="card-value">${s.average_rating.toFixed(2)} / 5.0</div>
-      <div class="stars" style="font-size:20px;margin-top:6px;">${stars}</div>
-      <div style="font-size:13px;color:var(--hint);margin-top:6px;">Всего оценок: ${s.rating_count} · Сделок: ${s.completed_trades}</div>
+    <div class="level-card">
+      <div class="level-head">
+        <div class="level-name">
+          <span class="icon">${level.icon}</span>
+          <span>${level.name}</span>
+        </div>
+        <span class="level-count">${s.completed_trades} сделок</span>
+      </div>
+      <div class="progress">
+        <div class="progress-bar" style="width:${Math.min(progress, 100)}%"></div>
+      </div>
+      <div class="progress-hint">${nextHint}</div>
     </div>
 
-    <div class="card">
-      <div class="card-title">💰 Баланс</div>
-      <div class="card-value">${fmtMoney(bal)}</div>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="val gold">${s.average_rating.toFixed(1)}</div>
+        <div class="lbl">Рейтинг</div>
+      </div>
+      <div class="stat-box">
+        <div class="val">${s.completed_trades}</div>
+        <div class="lbl">Сделок</div>
+      </div>
+      <div class="stat-box">
+        <div class="val">${s.disputes}</div>
+        <div class="lbl">Споров</div>
+      </div>
     </div>
 
-    <button class="btn btn-primary" onclick="go('topup')">💳 Пополнить баланс</button>
-    <button class="btn btn-secondary" onclick="go('wallets')">💼 Мои кошельки</button>
+    <div class="balance-card" style="background:linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);">
+      <div class="balance-label">💰 Баланс</div>
+      <div class="balance-value">${fmtMoney(bal)}<small> ₽</small></div>
+      <div class="balance-actions">
+        <button onclick="go('topup')">＋ Пополнить</button>
+        <button onclick="go('withdraw')">↗ Вывести</button>
+      </div>
+    </div>
+
+    <div class="section-title">⭐ Отзывы (${s.rating_count})</div>
+    <div class="card" style="text-align:center;padding:24px 16px;">
+      <div style="font-size:36px;font-weight:800;letter-spacing:-1.5px;">${s.average_rating.toFixed(2)}<span style="font-size:18px;color:var(--hint);font-weight:600;"> / 5.0</span></div>
+      <div style="font-size:22px;margin:8px 0;color:var(--gold);">${stars || '⭕'}</div>
+      <div style="font-size:13px;color:var(--hint);">На основе ${s.rating_count} оценок</div>
+    </div>
+
+    <div class="section-title">Управление</div>
+    <button class="item clickable" style="width:100%;text-align:left;" onclick="setTab('wallets')">
+      <div class="item-row">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:20px;">💼</span>
+          <div><div class="item-title">Мои кошельки</div><div class="item-sub">Реквизиты для выплат</div></div>
+        </div>
+        <span style="color:var(--hint);font-size:20px;">›</span>
+      </div>
+    </button>
+    <button class="item clickable" style="width:100%;text-align:left;" onclick="go('support')">
+      <div class="item-row">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:20px;">🆘</span>
+          <div><div class="item-title">Поддержка</div><div class="item-sub">${CONFIG.SUPPORT}</div></div>
+        </div>
+        <span style="color:var(--hint);font-size:20px;">›</span>
+      </div>
+    </button>
+
+    ${renderNav()}
   `;
 }
 
@@ -416,9 +836,14 @@ function screenProfile() {
    ============================================================ */
 function screenCreateTrade() {
   return `
-    <div class="header">
+    <div class="topbar">
       <button class="back-btn" onclick="go('main')">←</button>
-      <div><h1>Создать сделку</h1></div>
+      <div style="flex:1;"><div class="title">Создать сделку</div></div>
+    </div>
+
+    <div class="trust-banner">
+      <div class="icon">🛡️</div>
+      <div class="text">Средства покупателя будут <b>заморожены</b> до подтверждения передачи NFT.</div>
     </div>
 
     <div class="field">
@@ -427,8 +852,8 @@ function screenCreateTrade() {
     </div>
 
     <div class="field">
-      <label>💰 Сумма (₽, минимум 100)</label>
-      <input id="trade-amount" type="number" class="input" placeholder="1000" min="100">
+      <label>💰 Сумма сделки (мин. 100 ₽)</label>
+      <input id="trade-amount" type="number" class="input" placeholder="1000" min="100" inputmode="numeric">
     </div>
 
     <button class="btn btn-primary" onclick="submitCreateTrade()">✅ Создать сделку</button>
@@ -443,21 +868,19 @@ function submitCreateTrade() {
 
   const uid = getUserId();
   const tradeId = 'trade_' + STATE.data.tradeCount;
-  STATE.data.tradeCount += 1;
+  STATE.data.tradeCount++;
   STATE.data.trades[tradeId] = {
     seller_id: uid,
     seller_username: getUserName(),
     nft_link: link,
-    amount: amount,
+    amount,
     status: 'waiting_buyer',
     created_at: nowISO(),
-    buyer_id: null,
-    buyer_username: null,
-    history: [{ status: 'waiting_buyer', at: nowISO() }]
+    buyer_id: null, buyer_username: null
   };
   saveData();
-  go('trade-view', { tradeId });
   toast('✅ Сделка создана');
+  go('trade-view', { tradeId });
 }
 
 /* ============================================================
@@ -465,9 +888,9 @@ function submitCreateTrade() {
    ============================================================ */
 function screenJoinTrade() {
   return `
-    <div class="header">
+    <div class="topbar">
       <button class="back-btn" onclick="go('main')">←</button>
-      <div><h1>Присоединиться</h1></div>
+      <div style="flex:1;"><div class="title">Присоединиться</div></div>
     </div>
 
     <div class="field">
@@ -477,7 +900,6 @@ function screenJoinTrade() {
     <button class="btn btn-primary" onclick="submitJoinTrade()">🔗 Открыть сделку</button>
   `;
 }
-
 function submitJoinTrade() {
   const id = document.getElementById('join-id').value.trim();
   if (!STATE.data.trades[id]) return toast('❌ Сделка не найдена');
@@ -488,31 +910,35 @@ function submitJoinTrade() {
    SCREEN: TRADE VIEW
    ============================================================ */
 function screenTradeView() {
-  const tradeId = STATE.screenParams.tradeId;
+  const tradeId = STATE.params.tradeId;
   const t = STATE.data.trades[tradeId];
-  if (!t) return `<div class="empty"><div class="icon">❓</div><p>Сделка не найдена</p></div>`;
+  if (!t) return `<div class="empty"><div class="icon">❓</div><div class="title">Сделка не найдена</div></div>`;
 
   const uid = getUserId();
   const role = uid === t.seller_id ? 'seller' : (uid === t.buyer_id ? 'buyer' : 'viewer');
-  const statusLabel = {
-    waiting_buyer: ['Ожидает покупателя', 'status-waiting'],
-    waiting_payment: ['Ожидает оплаты', 'status-pending'],
-    pending_verification: ['Проверка оплаты', 'status-pending'],
-    payment_confirmed: ['Оплата подтверждена', 'status-active'],
-    nft_sent: ['NFT передан', 'status-active'],
-    completed: ['Завершена', 'status-completed'],
-    cancelled: ['Отменена', 'status-cancelled'],
-    payment_rejected: ['Оплата отклонена', 'status-rejected']
-  }[t.status] || [t.status, 'status-waiting'];
+  const statusMap = {
+    waiting_buyer: ['Ожидает покупателя', 'waiting', '⏳'],
+    waiting_payment: ['Ожидает оплаты', 'pending', '💳'],
+    pending_verification: ['Проверка оплаты', 'pending', '🔍'],
+    payment_confirmed: ['Оплата подтверждена', 'active', '✅'],
+    nft_sent: ['NFT передан', 'active', '📦'],
+    completed: ['Завершена', 'completed', '🎉'],
+    cancelled: ['Отменена', 'cancelled', '❌'],
+    payment_rejected: ['Оплата отклонена', 'rejected', '❌']
+  };
+  const [sLabel, sClass, sIcon] = statusMap[t.status] || [t.status, 'waiting', '•'];
+  const sellerStats = STATE.data.userStats[t.seller_id] || { average_rating: 0 };
 
   let actions = '';
   if (role === 'seller' && t.status === 'waiting_buyer') {
     const joinUrl = `${location.origin}${location.pathname}?trade=${tradeId}`;
     actions = `
       <div class="card">
-        <div class="card-title">🔗 Ссылка для покупателя</div>
-        <div class="item-value code" style="word-break:break-all;font-size:12px;">${esc(joinUrl)}</div>
-        <button class="copy-btn" onclick="copyText('${joinUrl}')">📋 Копировать</button>
+        <div class="card-title" style="font-size:12px;color:var(--hint);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">🔗 Ссылка для покупателя</div>
+        <div class="addr-box" style="margin-top:0;">
+          <code>${esc(joinUrl)}</code>
+          <button class="copy-inline" onclick="copyText('${joinUrl}')">Копировать</button>
+        </div>
       </div>`;
   }
   if (role === 'viewer' && t.status === 'waiting_buyer') {
@@ -521,9 +947,12 @@ function screenTradeView() {
   if (role === 'buyer' && t.status === 'waiting_payment') {
     actions = `
       <div class="card">
-        <div class="card-title">💳 Реквизиты для оплаты</div>
-        <div class="item-value code" style="font-size:14px;">${CONFIG.ADMIN_WALLET}</div>
-        <button class="copy-btn" onclick="copyText('${CONFIG.ADMIN_WALLET}')">📋 Копировать</button>
+        <div style="font-size:12px;color:var(--hint);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">💳 Реквизиты для оплаты</div>
+        <div style="font-size:13px;color:var(--hint);margin-bottom:6px;">Переведите <b style="color:var(--text);">${fmtMoneyFull(t.amount)}</b> на счёт:</div>
+        <div class="addr-box" style="margin-top:0;">
+          <code>${CONFIG.ADMIN_WALLET}</code>
+          <button class="copy-inline" onclick="copyText('${CONFIG.ADMIN_WALLET}')">Копировать</button>
+        </div>
       </div>
       <button class="btn btn-primary" onclick="markPaid('${tradeId}')">✅ Я оплатил</button>
       <button class="btn btn-danger" onclick="cancelTrade('${tradeId}')">❌ Отменить</button>`;
@@ -535,37 +964,52 @@ function screenTradeView() {
     actions = `<button class="btn btn-success" onclick="markNftReceived('${tradeId}')">✅ Я получил NFT</button>`;
   }
   if (role === 'seller' && t.status === 'completed') {
-    actions = `<div class="card" style="background:rgba(52,199,89,0.15);">
-      <div class="card-title">💰 Выплата</div>
-      <div class="item-value">${fmtMoney(t.amount)}</div>
-      <div style="font-size:13px;color:var(--hint);margin-top:6px;">Ожидайте перевода на ваш кошелёк.</div>
+    actions = `<div class="card" style="background:rgba(52,199,89,0.12);border:1px solid rgba(52,199,89,0.25);">
+      <div style="font-size:13px;color:var(--hint);font-weight:600;">💰 К выплате</div>
+      <div style="font-size:22px;font-weight:800;margin-top:4px;">${fmtMoneyFull(t.amount)}</div>
+      <div style="font-size:12px;color:var(--hint);margin-top:6px;">Ожидайте перевода на кошелёк</div>
+    </div>`;
+  }
+  if (isAdmin(uid) && t.status === 'pending_verification') {
+    actions += `<div class="card" style="background:rgba(255,149,0,0.1);border:1px solid rgba(255,149,0,0.3);">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px;">🔧 Действия администратора</div>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="adminConfirmPayment('${tradeId}')">✅ Принять</button>
+        <button class="btn btn-danger" onclick="adminRejectPayment('${tradeId}')">❌ Отклонить</button>
+      </div>
     </div>`;
   }
 
-  if (isAdmin(uid) && t.status === 'pending_verification') {
-    actions += `
-      <button class="btn btn-success" style="margin-top:12px;" onclick="adminConfirmPayment('${tradeId}')">✅ Подтвердить оплату</button>
-      <button class="btn btn-danger" onclick="adminRejectPayment('${tradeId}')">❌ Отклонить оплату</button>`;
-  }
-
   return `
-    <div class="header">
+    <div class="topbar">
       <button class="back-btn" onclick="go('main')">←</button>
-      <div><h1>Сделка ${tradeId}</h1></div>
+      <div style="flex:1;"><div class="title">${tradeId}</div><div style="font-size:12px;color:var(--hint);margin-top:2px;">${fmtDate(t.created_at)}</div></div>
+      <span class="pill ${sClass}">${sIcon} ${sLabel}</span>
+    </div>
+
+    <div class="balance-card" style="background:linear-gradient(135deg, #2d3561 0%, #4a5a96 100%);margin-bottom:12px;">
+      <div class="balance-label">Сумма сделки</div>
+      <div class="balance-value">${fmtMoney(t.amount)}<small> ₽</small></div>
     </div>
 
     <div class="card">
-      <div class="card-title">Статус</div>
-      <span class="status ${statusLabel[1]}">${statusLabel[0]}</span>
+      <div style="font-size:12px;color:var(--hint);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">🎨 NFT</div>
+      <div style="font-size:15px;font-weight:600;word-break:break-word;">${esc(t.nft_link)}</div>
     </div>
 
     <div class="card">
-      <div class="item-row"><span class="item-label">🎨 NFT</span></div>
-      <div class="item-value" style="margin:6px 0;">${esc(t.nft_link)}</div>
-      <div class="item-row"><span class="item-label">💰 Сумма</span><span class="item-value">${fmtMoney(t.amount)}</span></div>
-      <div class="item-row"><span class="item-label">👤 Продавец</span><span class="item-value">@${esc(t.seller_username)}</span></div>
-      ${t.buyer_username ? `<div class="item-row"><span class="item-label">👤 Покупатель</span><span class="item-value">@${esc(t.buyer_username)}</span></div>` : ''}
-      <div class="item-row"><span class="item-label">📅 Создана</span><span class="item-value" style="font-size:12px;">${fmtDate(t.created_at)}</span></div>
+      <div class="item-row">
+        <span class="item-label">👤 Продавец</span>
+        <span class="item-value">@${esc(t.seller_username)} <span style="color:var(--gold);">⭐${(sellerStats.average_rating || 0).toFixed(1)}</span></span>
+      </div>
+      ${t.buyer_username ? `<div class="item-row">
+        <span class="item-label">👤 Покупатель</span>
+        <span class="item-value">@${esc(t.buyer_username)}</span>
+      </div>` : ''}
+      <div class="item-row">
+        <span class="item-label">🛡️ Гарант</span>
+        <span class="item-value" style="color:var(--success);">Защищено</span>
+      </div>
     </div>
 
     ${actions}
@@ -574,12 +1018,10 @@ function screenTradeView() {
 
 function joinAsBuyer(tradeId) {
   const t = STATE.data.trades[tradeId];
-  if (!t) return toast('❌ Сделка не найдена');
-  if (t.status !== 'waiting_buyer') return toast('❌ Сделка недоступна');
+  if (!t || t.status !== 'waiting_buyer') return toast('❌ Сделка недоступна');
   t.buyer_id = getUserId();
   t.buyer_username = getUserName();
   t.status = 'waiting_payment';
-  t.history.push({ status: 'waiting_payment', at: nowISO() });
   saveData();
   toast('✅ Вы присоединились');
   render();
@@ -587,8 +1029,6 @@ function joinAsBuyer(tradeId) {
 function markPaid(tradeId) {
   const t = STATE.data.trades[tradeId];
   t.status = 'pending_verification';
-  t.payment_reported_at = nowISO();
-  t.history.push({ status: 'pending_verification', at: nowISO() });
   saveData();
   toast('⏳ Оплата на проверке');
   render();
@@ -596,7 +1036,6 @@ function markPaid(tradeId) {
 function cancelTrade(tradeId) {
   const t = STATE.data.trades[tradeId];
   t.status = 'cancelled';
-  t.history.push({ status: 'cancelled', at: nowISO() });
   saveData();
   toast('❌ Сделка отменена');
   render();
@@ -604,8 +1043,6 @@ function cancelTrade(tradeId) {
 function markNftSent(tradeId) {
   const t = STATE.data.trades[tradeId];
   t.status = 'nft_sent';
-  t.nft_sent_at = nowISO();
-  t.history.push({ status: 'nft_sent', at: nowISO() });
   saveData();
   toast('📦 Отправлено');
   render();
@@ -613,16 +1050,13 @@ function markNftSent(tradeId) {
 function markNftReceived(tradeId) {
   const t = STATE.data.trades[tradeId];
   t.status = 'completed';
-  t.completed_at = nowISO();
-  t.history.push({ status: 'completed', at: nowISO() });
   ensureUserStats(t.seller_id);
-  STATE.data.userStats[t.seller_id].completed_trades += 1;
-  // Добавляем pending rating и продавцу и покупателю
+  STATE.data.userStats[t.seller_id].completed_trades++;
   addPendingRating(t.buyer_id, tradeId, t.seller_id, t.seller_username);
   addPendingRating(t.seller_id, tradeId, t.buyer_id, t.buyer_username);
   saveData();
   toast('🎉 Сделка завершена!');
-  go('main');
+  setTimeout(() => go('main'), 800);
 }
 
 function addPendingRating(raterId, tradeId, targetId, targetUsername) {
@@ -630,13 +1064,9 @@ function addPendingRating(raterId, tradeId, targetId, targetUsername) {
   STATE.data.pendingRatings[raterId].push({ tradeId, targetId, targetUsername });
 }
 
-/* ============================================================
-   ADMIN: confirm/reject payment
-   ============================================================ */
 function adminConfirmPayment(tradeId) {
   const t = STATE.data.trades[tradeId];
   t.status = 'payment_confirmed';
-  t.history.push({ status: 'payment_confirmed', at: nowISO() });
   saveData();
   toast('✅ Оплата подтверждена');
   render();
@@ -644,7 +1074,6 @@ function adminConfirmPayment(tradeId) {
 function adminRejectPayment(tradeId) {
   const t = STATE.data.trades[tradeId];
   t.status = 'payment_rejected';
-  t.history.push({ status: 'payment_rejected', at: nowISO() });
   saveData();
   toast('❌ Оплата отклонена');
   render();
@@ -659,25 +1088,38 @@ function screenMyTrades() {
     .filter(([_, t]) => t.seller_id === uid || t.buyer_id === uid)
     .sort((a, b) => new Date(b[1].created_at) - new Date(a[1].created_at));
 
-  if (!list.length) return `
-    <div class="header"><button class="back-btn" onclick="go('main')">←</button><h1>Мои сделки</h1></div>
-    <div class="empty"><div class="icon">📭</div><p>У вас пока нет сделок</p></div>`;
-
   return `
-    <div class="header"><button class="back-btn" onclick="go('main')">←</button><h1>Мои сделки</h1></div>
-    ${list.map(([id, t]) => {
-      const role = t.seller_id === uid ? 'продавец' : 'покупатель';
-      const status = {
-        waiting_buyer: '⏳ Ожидает', waiting_payment: '💳 Ожидает оплаты',
-        pending_verification: '🔍 Проверка', payment_confirmed: '✅ Оплачено',
-        nft_sent: '📦 Передан', completed: '🎉 Завершена',
-        cancelled: '❌ Отменена', payment_rejected: '❌ Отклонена'
-      }[t.status] || t.status;
-      return `<div class="item" onclick="go('trade-view',{tradeId:'${id}'})" style="cursor:pointer;">
-        <div class="item-title">${id} · ${status}</div>
-        <div style="font-size:13px;color:var(--hint);">${role} · ${fmtMoney(t.amount)}</div>
+    <div class="topbar">
+      <div style="flex:1;"><div class="title">Мои сделки</div><div style="font-size:12px;color:var(--hint);margin-top:2px;">${list.length} всего</div></div>
+    </div>
+    ${list.length ? list.map(([id, t]) => {
+      const role = t.seller_id === uid ? 'Продавец' : 'Покупатель';
+      const statusMap = {
+        waiting_buyer: ['⏳ Ожидает', 'waiting'],
+        waiting_payment: ['💳 Оплата', 'pending'],
+        pending_verification: ['🔍 Проверка', 'pending'],
+        payment_confirmed: ['✅ Оплачено', 'active'],
+        nft_sent: ['📦 Передан', 'active'],
+        completed: ['🎉 Завершена', 'completed'],
+        cancelled: ['❌ Отменена', 'cancelled'],
+        payment_rejected: ['❌ Отклонена', 'rejected']
+      };
+      const [label, cls] = statusMap[t.status] || [t.status, 'waiting'];
+      return `<div class="trade-item" onclick="go('trade-view',{tradeId:'${id}'})">
+        <div class="head">
+          <div>
+            <div class="id">${id}</div>
+            <div class="nft">${esc(t.nft_link)}</div>
+          </div>
+          <span class="pill ${cls}">${label}</span>
+        </div>
+        <div class="foot">
+          <span>${role} · ${fmtDate(t.created_at)}</span>
+          <span class="amount">${fmtMoneyFull(t.amount)}</span>
+        </div>
       </div>`;
-    }).join('')}
+    }).join('') : `<div class="empty"><div class="icon">📭</div><div class="title">Пока нет сделок</div><div class="desc">Создайте первую сделку</div><button class="btn btn-primary" style="margin-top:20px;max-width:200px;margin-left:auto;margin-right:auto;" onclick="go('create-trade')">Создать</button></div>`}
+    ${renderNav()}
   `;
 }
 
@@ -688,49 +1130,59 @@ function screenWallets() {
   const uid = getUserId();
   const wallets = STATE.data.userWallets[uid] || {};
   const list = Object.entries(wallets);
-  const typeNames = { card: '💳 Карта', sbp: '📱 СБП', yoomoney: '💰 ЮMoney', qiwi: '🧾 Qiwi' };
+  const typeNames = { card: '💳 Банковская карта', sbp: '📱 СБП', yoomoney: '💰 ЮMoney', qiwi: '🧾 Qiwi' };
 
   return `
-    <div class="header"><button class="back-btn" onclick="go('main')">←</button><h1>Кошельки</h1></div>
+    <div class="topbar">
+      <div style="flex:1;"><div class="title">Кошельки</div><div style="font-size:12px;color:var(--hint);margin-top:2px;">Для получения выплат</div></div>
+    </div>
+
     ${list.length ? list.map(([type, w]) => `
       <div class="item">
         <div class="item-row">
-          <div>
+          <div style="flex:1;">
             <div class="item-title">${typeNames[type] || type}</div>
-            <div class="item-value code" style="font-size:13px;">${esc(w.details)}</div>
+            <div class="item-value mono" style="text-align:left;margin-top:4px;color:var(--hint);">${esc(w.details)}</div>
           </div>
-          <button class="copy-btn" onclick="copyText('${esc(w.details)}')" style="background:var(--danger);color:#fff;padding:8px 12px;border-radius:8px;">🗑️</button>
+          <div style="display:flex;gap:4px;">
+            <button class="copy-inline" style="background:rgba(36,129,204,0.1);padding:8px;border-radius:8px;" onclick="copyText('${esc(w.details)}')">📋</button>
+            <button class="copy-inline" style="background:rgba(255,59,48,0.1);color:var(--danger);padding:8px;border-radius:8px;" onclick="deleteWallet('${type}')">🗑️</button>
+          </div>
         </div>
-      </div>`).join('') : `
-      <div class="empty"><div class="icon">💼</div><p>Нет добавленных кошельков</p></div>`}
-    <button class="btn btn-primary" onclick="go('add-wallet')">➕ Добавить кошелёк</button>
+      </div>
+    `).join('') : `<div class="empty"><div class="icon">💼</div><div class="title">Нет кошельков</div><div class="desc">Добавьте реквизиты для получения выплат</div></div>`}
+
+    <button class="btn btn-primary" style="margin-top:16px;" onclick="go('add-wallet')">➕ Добавить кошелёк</button>
+    ${renderNav()}
   `;
 }
 
 function screenAddWallet() {
   return `
-    <div class="header"><button class="back-btn" onclick="go('wallets')">←</button><h1>Добавить кошелёк</h1></div>
-    <button class="menu-btn" onclick="startAddWallet('card')"><span class="icon">💳</span>Банковская карта<span class="arrow">›</span></button>
-    <button class="menu-btn" onclick="startAddWallet('sbp')"><span class="icon">📱</span>СБП<span class="arrow">›</span></button>
-    <button class="menu-btn" onclick="startAddWallet('yoomoney')"><span class="icon">💰</span>ЮMoney<span class="arrow">›</span></button>
-    <button class="menu-btn" onclick="startAddWallet('qiwi')"><span class="icon">🧾</span>Qiwi<span class="arrow">›</span></button>
+    <div class="topbar">
+      <button class="back-btn" onclick="go('wallets')">←</button>
+      <div style="flex:1;"><div class="title">Добавить кошелёк</div></div>
+    </div>
+    <button class="item clickable" style="width:100%;text-align:left;" onclick="startAddWallet('card')"><div class="item-row"><div style="display:flex;align-items:center;gap:12px;"><span style="font-size:24px;">💳</span><div><div class="item-title">Банковская карта</div><div class="item-sub">Visa / MasterCard / МИР</div></div></div><span style="color:var(--hint);">›</span></div></button>
+    <button class="item clickable" style="width:100%;text-align:left;" onclick="startAddWallet('sbp')"><div class="item-row"><div style="display:flex;align-items:center;gap:12px;"><span style="font-size:24px;">📱</span><div><div class="item-title">СБП</div><div class="item-sub">По номеру телефона</div></div></div><span style="color:var(--hint);">›</span></div></button>
+    <button class="item clickable" style="width:100%;text-align:left;" onclick="startAddWallet('yoomoney')"><div class="item-row"><div style="display:flex;align-items:center;gap:12px;"><span style="font-size:24px;">💰</span><div><div class="item-title">ЮMoney</div><div class="item-sub">Номер кошелька</div></div></div><span style="color:var(--hint);">›</span></div></button>
+    <button class="item clickable" style="width:100%;text-align:left;" onclick="startAddWallet('qiwi')"><div class="item-row"><div style="display:flex;align-items:center;gap:12px;"><span style="font-size:24px;">🧾</span><div><div class="item-title">Qiwi</div><div class="item-sub">Номер кошелька</div></div></div><span style="color:var(--hint);">›</span></div></button>
   `;
 }
 
 function startAddWallet(type) {
   const prompts = {
-    card: ['💳 Номер карты', '16-19 цифр', 'text'],
-    sbp: ['📱 Телефон для СБП', '+7XXXXXXXXXX', 'tel'],
-    yoomoney: ['💰 Номер кошелька ЮMoney', 'например 4100112345678', 'text'],
-    qiwi: ['🧾 Номер кошелька Qiwi', '+7XXXXXXXXXX', 'tel']
+    card: ['💳 Номер карты', '0000 0000 0000 0000', 'tel'],
+    sbp: ['📱 Телефон для СБП', '+7 900 000 00 00', 'tel'],
+    yoomoney: ['💰 Номер кошелька ЮMoney', '4100112345678', 'text'],
+    qiwi: ['🧾 Номер кошелька Qiwi', '+7 900 000 00 00', 'tel']
   };
   const p = prompts[type];
   openModal(`
-    <button class="modal-close" onclick="closeModal()">✕</button>
     <h3>${p[0]}</h3>
     <div class="field">
-      <label>${p[1]}</label>
-      <input id="wallet-details" class="input" type="${p[2]}" placeholder="${p[1]}">
+      <label>Реквизиты</label>
+      <input id="wallet-details" class="input" type="${p[2]}" placeholder="${p[1]}" autofocus>
     </div>
     <button class="btn btn-primary" onclick="saveWallet('${type}')">💾 Сохранить</button>
   `);
@@ -751,13 +1203,21 @@ function saveWallet(type) {
   }
   const uid = getUserId();
   if (!STATE.data.userWallets[uid]) STATE.data.userWallets[uid] = {};
-  STATE.data.userWallets[uid][type] = {
-    details, added: nowISO()
-  };
+  STATE.data.userWallets[uid][type] = { details, added: nowISO() };
   saveData();
   closeModal();
   toast('✅ Кошелёк добавлен');
   render();
+}
+
+function deleteWallet(type) {
+  const uid = getUserId();
+  if (STATE.data.userWallets[uid]?.[type]) {
+    delete STATE.data.userWallets[uid][type];
+    saveData();
+    toast('🗑️ Кошелёк удалён');
+    render();
+  }
 }
 
 /* ============================================================
@@ -765,41 +1225,43 @@ function saveWallet(type) {
    ============================================================ */
 function screenTopup() {
   return `
-    <div class="header"><button class="back-btn" onclick="go('profile')">←</button><h1>Пополнение</h1></div>
-    <div class="field">
-      <label>💰 Сумма пополнения (мин. 100 ₽)</label>
-      <input id="topup-amount" type="number" class="input" placeholder="500" min="100">
+    <div class="topbar">
+      <button class="back-btn" onclick="go('profile')">←</button>
+      <div style="flex:1;"><div class="title">Пополнение</div></div>
     </div>
-    <button class="btn btn-primary" onclick="submitTopup()">➡️ Продолжить</button>
+
+    <div class="field">
+      <label>💰 Сумма (мин. 100 ₽)</label>
+      <input id="topup-amount" type="number" class="input" placeholder="500" min="100" inputmode="numeric">
+    </div>
+    <button class="btn btn-primary" onclick="submitTopup()">Продолжить</button>
   `;
 }
-
 function submitTopup() {
   const amount = parseFloat(document.getElementById('topup-amount').value);
   if (!amount || amount < 100) return toast('❌ Минимум 100 ₽');
   const uid = getUserId();
   const topupId = 'topup_' + uid + '_' + Date.now();
-  STATE.data.pendingTopups[topupId] = {
-    user_id: uid, amount, status: 'waiting_payment', created_at: nowISO()
-  };
+  STATE.data.pendingTopups[topupId] = { user_id: uid, amount, status: 'waiting_payment', created_at: nowISO() };
   saveData();
   openModal(`
-    <button class="modal-close" onclick="closeModal()">✕</button>
     <h3>💳 Реквизиты для оплаты</h3>
-    <div class="card">
-      <div class="item-row"><span class="item-label">Сумма</span><span class="item-value">${fmtMoney(amount)}</span></div>
-      <div class="item-row"><span class="item-label">Счёт</span><span class="item-value code">${CONFIG.ADMIN_WALLET}</span></div>
-      <button class="copy-btn" onclick="copyText('${CONFIG.ADMIN_WALLET}')">📋 Копировать реквизиты</button>
+    <div style="background:var(--sec-bg);border-radius:12px;padding:14px;margin-bottom:16px;">
+      <div class="item-row"><span class="item-label">Сумма</span><span class="item-value">${fmtMoneyFull(amount)}</span></div>
     </div>
+    <div class="addr-box">
+      <code>${CONFIG.ADMIN_WALLET}</code>
+      <button class="copy-inline" onclick="copyText('${CONFIG.ADMIN_WALLET}')">Копировать</button>
+    </div>
+    <div style="font-size:12px;color:var(--hint);margin:12px 0;text-align:center;">После перевода нажмите кнопку ниже</div>
     <button class="btn btn-primary" onclick="confirmTopup('${topupId}')">✅ Я оплатил</button>
   `);
 }
-
 function confirmTopup(topupId) {
   STATE.data.pendingTopups[topupId].status = 'pending_verification';
   saveData();
   closeModal();
-  toast('⏳ Оплата на проверке у администратора');
+  toast('⏳ Оплата на проверке');
   go('profile');
 }
 
@@ -808,47 +1270,82 @@ function confirmTopup(topupId) {
    ============================================================ */
 function screenSupport() {
   return `
-    <div class="header"><button class="back-btn" onclick="go('main')">←</button><h1>Поддержка</h1></div>
-    <div class="card" style="text-align:center;">
-      <div style="font-size:48px;margin-bottom:8px;">🆘</div>
-      <div class="item-title">Свяжитесь с нами</div>
-      <div style="font-size:14px;color:var(--hint);margin:8px 0;">Онлайн 24/7</div>
+    <div class="topbar">
+      <button class="back-btn" onclick="go('main')">←</button>
+      <div style="flex:1;"><div class="title">Поддержка</div></div>
+    </div>
+    <div class="card" style="text-align:center;padding:32px 20px;">
+      <div style="font-size:64px;margin-bottom:12px;">🆘</div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:6px;">Мы на связи</div>
+      <div style="font-size:14px;color:var(--hint);margin-bottom:20px;">Отвечаем 24/7 без выходных</div>
       <button class="btn btn-primary" onclick="tg && tg.openTelegramLink ? tg.openTelegramLink('https://t.me/${CONFIG.SUPPORT.slice(1)}') : window.open('https://t.me/${CONFIG.SUPPORT.slice(1)}','_blank')">💬 Написать ${CONFIG.SUPPORT}</button>
     </div>
   `;
 }
 
 /* ============================================================
-   SCREEN: RATINGS (pending)
+   SCREEN: WITHDRAW
+   ============================================================ */
+function screenWithdraw() {
+  const uid = getUserId();
+  const bal = STATE.data.userBalances[uid] || 0;
+  const wallets = STATE.data.userWallets[uid] || {};
+  const hasWallet = Object.keys(wallets).length > 0;
+
+  if (!hasWallet) {
+    return `<div class="topbar"><button class="back-btn" onclick="go('profile')">←</button><div style="flex:1;"><div class="title">Вывод</div></div></div>
+      <div class="empty"><div class="icon">💼</div><div class="title">Нужен кошелёк</div><div class="desc">Сначала добавьте реквизиты для вывода</div>
+      <button class="btn btn-primary" style="margin-top:20px;max-width:200px;margin-left:auto;margin-right:auto;" onclick="go('add-wallet')">Добавить</button></div>`;
+  }
+
+  return `
+    <div class="topbar"><button class="back-btn" onclick="go('profile')">←</button><div style="flex:1;"><div class="title">Вывод</div></div></div>
+    <div class="card" style="text-align:center;">
+      <div style="font-size:13px;color:var(--hint);font-weight:600;">Доступно</div>
+      <div style="font-size:32px;font-weight:800;margin-top:4px;">${fmtMoneyFull(bal)}</div>
+    </div>
+    <div class="field">
+      <label>💰 Сумма вывода</label>
+      <input id="withdraw-amount" type="number" class="input" placeholder="1000" inputmode="numeric">
+    </div>
+    <button class="btn btn-primary" onclick="submitWithdraw()">↗ Вывести</button>
+  `;
+}
+function submitWithdraw() {
+  toast('📨 Заявка отправлена. Ожидайте подтверждения администратора');
+  setTimeout(() => go('profile'), 1000);
+}
+
+/* ============================================================
+   SCREEN: RATINGS
    ============================================================ */
 function screenRatings() {
   const uid = getUserId();
   const list = STATE.data.pendingRatings[uid] || [];
   if (!list.length) {
-    return `<div class="header"><button class="back-btn" onclick="go('main')">←</button><h1>Оценки</h1></div>
-      <div class="empty"><div class="icon">✅</div><p>Нет ожидающих оценок</p></div>`;
+    return `<div class="topbar"><button class="back-btn" onclick="go('main')">←</button><div style="flex:1;"><div class="title">Оценки</div></div></div>
+      <div class="empty"><div class="icon">✅</div><div class="title">Нет оценок</div><div class="desc">Все оценки отправлены</div></div>`;
   }
   return `
-    <div class="header"><button class="back-btn" onclick="go('main')">←</button><h1>Оценки (${list.length})</h1></div>
+    <div class="topbar"><button class="back-btn" onclick="go('main')">←</button><div style="flex:1;"><div class="title">Оценки (${list.length})</div></div></div>
     ${list.map((r, i) => `
       <div class="card">
-        <div class="item-title">Сделка ${esc(r.tradeId)}</div>
-        <div style="font-size:13px;color:var(--hint);margin:4px 0 12px;">Оцените пользователя @${esc(r.targetUsername)}</div>
-        <div class="rating-input" id="rating-${i}">
-          ${[1,2,3,4,5].map(n => `<button class="star" onclick="setRating(${i},${n})" data-star="${n}">⭐</button>`).join('')}
+        <div style="font-size:12px;color:var(--hint);font-weight:600;">Сделка ${esc(r.tradeId)}</div>
+        <div style="font-size:16px;font-weight:700;margin-top:4px;">Оцените @${esc(r.targetUsername)}</div>
+        <div class="rating-stars" id="rating-${i}">
+          ${[1,2,3,4,5].map(n => `<button onclick="setRating(${i},${n})" data-star="${n}">⭐</button>`).join('')}
         </div>
-        <button class="btn btn-primary" onclick="submitRating(${i})">Отправить оценку</button>
+        <button class="btn btn-primary" onclick="submitRating(${i})">Отправить</button>
       </div>
     `).join('')}
   `;
 }
 
-let ratingTemp = {};
+const ratingTemp = {};
 function setRating(idx, n) {
   ratingTemp[idx] = n;
-  const cont = document.getElementById('rating-' + idx);
-  cont.querySelectorAll('.star').forEach(s => {
-    s.classList.toggle('active', parseInt(s.dataset.star) <= n);
+  document.getElementById('rating-' + idx).querySelectorAll('button').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.star) <= n);
   });
 }
 function submitRating(idx) {
@@ -858,18 +1355,18 @@ function submitRating(idx) {
   ensureUserStats(r.targetId);
   const s = STATE.data.userStats[r.targetId];
   s.total_rating += ratingTemp[idx];
-  s.rating_count += 1;
+  s.rating_count++;
   s.average_rating = Math.round((s.total_rating / s.rating_count) * 100) / 100;
   STATE.data.pendingRatings[uid].splice(idx, 1);
   if (!STATE.data.pendingRatings[uid].length) delete STATE.data.pendingRatings[uid];
   saveData();
   delete ratingTemp[idx];
   toast('⭐ Спасибо за оценку!');
-  render();
+  go('main');
 }
 
 /* ============================================================
-   ADMIN PANEL
+   ADMIN
    ============================================================ */
 function screenAdmin() {
   if (!isAdmin()) return screenMain();
@@ -880,81 +1377,71 @@ function screenAdmin() {
   const active = trades.filter(t => ['waiting_payment','pending_verification','payment_confirmed','nft_sent'].includes(t.status)).length;
 
   return `
-    <div class="header"><button class="back-btn" onclick="go('main')">←</button><h1>🔧 Админ-панель</h1></div>
+    <div class="topbar"><button class="back-btn" onclick="go('main')">←</button><div style="flex:1;"><div class="title">🔧 Админ-панель</div></div></div>
 
-    <div class="card">
-      <div class="card-title">📊 Статистика</div>
-      <div class="item-row"><span class="item-label">Всего сделок</span><span class="item-value">${trades.length}</span></div>
-      <div class="item-row"><span class="item-label">Завершено</span><span class="item-value">${completed}</span></div>
-      <div class="item-row"><span class="item-label">Активных</span><span class="item-value">${active}</span></div>
-      <div class="item-row"><span class="item-label">Ожидают оплаты (проверка)</span><span class="item-value">${pendingPay}</span></div>
-      <div class="item-row"><span class="item-label">Пополнения на проверке</span><span class="item-value">${pendingTopups}</span></div>
-      <div class="item-row"><span class="item-label">Администраторов</span><span class="item-value">${STATE.data.admins.length}</span></div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="val">${trades.length}</div><div class="lbl">Сделок</div></div>
+      <div class="stat-box"><div class="val" style="color:var(--success);">${completed}</div><div class="lbl">Завершено</div></div>
+      <div class="stat-box"><div class="val" style="color:var(--warn);">${active}</div><div class="lbl">Активных</div></div>
     </div>
 
-    <button class="menu-btn" onclick="go('admin-trades')">
-      <span class="icon">📋</span>Все сделки<span class="arrow">›</span>
-    </button>
-    <button class="menu-btn" onclick="go('admin-topups')">
-      <span class="icon">💳</span>Запросы пополнений ${pendingTopups ? `<span class="badge">${pendingTopups}</span>` : ''}<span class="arrow">›</span>
-    </button>
-    <button class="menu-btn" onclick="go('admin-manage')">
-      <span class="icon">👑</span>Администраторы<span class="arrow">›</span>
-    </button>
+    ${pendingPay || pendingTopups ? `
+      <div class="card" style="background:linear-gradient(135deg,rgba(255,59,48,0.1),rgba(255,149,0,0.08));border:1px solid rgba(255,59,48,0.25);">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px;">⚠️ Требует внимания</div>
+        <div class="item-row"><span class="item-label">Оплаты на проверке</span><span class="item-value" style="color:var(--danger);">${pendingPay}</span></div>
+        <div class="item-row"><span class="item-label">Пополнения</span><span class="item-value" style="color:var(--danger);">${pendingTopups}</span></div>
+      </div>
+    ` : ''}
+
+    <button class="item clickable" style="width:100%;text-align:left;" onclick="go('admin-trades')"><div class="item-row"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">📋</span><div class="item-title">Все сделки</div></div><span style="color:var(--hint);">›</span></div></button>
+    <button class="item clickable" style="width:100%;text-align:left;" onclick="go('admin-topups')"><div class="item-row"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">💳</span><div class="item-title">Пополнения ${pendingTopups ? `<span style="color:var(--danger);">(${pendingTopups})</span>` : ''}</div></div><span style="color:var(--hint);">›</span></div></button>
+    <button class="item clickable" style="width:100%;text-align:left;" onclick="go('admin-manage')"><div class="item-row"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">👑</span><div class="item-title">Администраторы (${STATE.data.admins.length})</div></div><span style="color:var(--hint);">›</span></div></button>
   `;
 }
 
 function screenAdminTrades() {
   if (!isAdmin()) return screenMain();
-  const trades = Object.entries(STATE.data.trades).sort((a, b) => new Date(b[1].created_at) - new Date(a[1].created_at));
+  const list = Object.entries(STATE.data.trades).sort((a, b) => new Date(b[1].created_at) - new Date(a[1].created_at));
   return `
-    <div class="header"><button class="back-btn" onclick="go('admin')">←</button><h1>Все сделки</h1></div>
-    ${trades.length ? trades.map(([id, t]) => `
-      <div class="item" onclick="go('trade-view',{tradeId:'${id}'})" style="cursor:pointer;">
-        <div class="item-title">${id}</div>
-        <div style="font-size:13px;color:var(--hint);">
-          ${t.status} · ${fmtMoney(t.amount)} · @${esc(t.seller_username)}${t.buyer_username ? ' → @' + esc(t.buyer_username) : ''}
-        </div>
+    <div class="topbar"><button class="back-btn" onclick="go('admin')">←</button><div style="flex:1;"><div class="title">Все сделки</div></div></div>
+    ${list.length ? list.map(([id, t]) => `
+      <div class="trade-item" onclick="go('trade-view',{tradeId:'${id}'})">
+        <div class="head"><div><div class="id">${id}</div><div class="nft">${esc(t.nft_link)}</div></div>
+        <span style="font-size:11px;color:var(--hint);">${t.status}</span></div>
+        <div class="foot"><span>@${esc(t.seller_username)}${t.buyer_username ? ' → @' + esc(t.buyer_username) : ''}</span><span class="amount">${fmtMoneyFull(t.amount)}</span></div>
       </div>
-    `).join('') : '<div class="empty"><div class="icon">📭</div><p>Нет сделок</p></div>'}
+    `).join('') : '<div class="empty"><div class="icon">📭</div><div class="title">Нет сделок</div></div>'}
   `;
 }
 
 function screenAdminTopups() {
   if (!isAdmin()) return screenMain();
-  const list = Object.entries(STATE.data.pendingTopups)
-    .filter(([_, t]) => t.status === 'pending_verification');
+  const list = Object.entries(STATE.data.pendingTopups).filter(([_, t]) => t.status === 'pending_verification');
   return `
-    <div class="header"><button class="back-btn" onclick="go('admin')">←</button><h1>Пополнения</h1></div>
+    <div class="topbar"><button class="back-btn" onclick="go('admin')">←</button><div style="flex:1;"><div class="title">Пополнения</div></div></div>
     ${list.length ? list.map(([id, t]) => `
       <div class="card">
-        <div class="item-row"><span class="item-label">ID пользователя</span><span class="item-value code">${t.user_id}</span></div>
-        <div class="item-row"><span class="item-label">Сумма</span><span class="item-value">${fmtMoney(t.amount)}</span></div>
+        <div class="item-row"><span class="item-label">Пользователь</span><span class="item-value mono">${t.user_id}</span></div>
+        <div class="item-row"><span class="item-label">Сумма</span><span class="item-value">${fmtMoneyFull(t.amount)}</span></div>
         <div class="item-row"><span class="item-label">Дата</span><span class="item-value" style="font-size:12px;">${fmtDate(t.created_at)}</span></div>
         <div class="btn-row" style="margin-top:12px;">
           <button class="btn btn-success" onclick="adminApproveTopup('${id}')">✅ Зачислить</button>
           <button class="btn btn-danger" onclick="adminRejectTopup('${id}')">❌ Отклонить</button>
         </div>
       </div>
-    `).join('') : '<div class="empty"><div class="icon">✅</div><p>Нет заявок на пополнение</p></div>'}
+    `).join('') : '<div class="empty"><div class="icon">✅</div><div class="title">Нет заявок</div></div>'}
   `;
 }
-
-function adminApproveTopup(topupId) {
-  const t = STATE.data.pendingTopups[topupId];
-  if (!t) return;
-  const cur = STATE.data.userBalances[t.user_id] || 0;
-  STATE.data.userBalances[t.user_id] = cur + t.amount;
+function adminApproveTopup(id) {
+  const t = STATE.data.pendingTopups[id];
+  STATE.data.userBalances[t.user_id] = (STATE.data.userBalances[t.user_id] || 0) + t.amount;
   t.status = 'completed';
-  t.completed_at = nowISO();
   saveData();
   toast('✅ Баланс пополнен');
   render();
 }
-function adminRejectTopup(topupId) {
-  const t = STATE.data.pendingTopups[topupId];
-  if (!t) return;
-  t.status = 'rejected';
+function adminRejectTopup(id) {
+  STATE.data.pendingTopups[id].status = 'rejected';
   saveData();
   toast('❌ Отклонено');
   render();
@@ -963,103 +1450,87 @@ function adminRejectTopup(topupId) {
 function screenAdminManage() {
   if (!isAdmin()) return screenMain();
   return `
-    <div class="header"><button class="back-btn" onclick="go('admin')">←</button><h1>Администраторы</h1></div>
+    <div class="topbar"><button class="back-btn" onclick="go('admin')">←</button><div style="flex:1;"><div class="title">Администраторы</div></div></div>
     <div class="card">
-      <div class="card-title">Список (${STATE.data.admins.length})</div>
       ${STATE.data.admins.map(id => `
         <div class="item-row" style="padding:10px 0;border-bottom:1px solid rgba(142,142,147,0.15);">
-          <span class="item-value code">${id}${id === getUserId() ? ' (вы)' : ''}${id === CONFIG.MAIN_ADMIN_ID ? ' 👑' : ''}</span>
-          ${id !== CONFIG.MAIN_ADMIN_ID && id !== getUserId() ? `<button class="copy-btn" style="color:var(--danger);" onclick="removeAdmin('${id}')">Удалить</button>` : ''}
+          <span class="item-value mono">${id}${id === getUserId() ? ' (вы)' : ''}${id === CONFIG.MAIN_ADMIN_ID ? ' 👑' : ''}</span>
+          ${id !== CONFIG.MAIN_ADMIN_ID && id !== getUserId() ? `<button class="copy-inline" style="color:var(--danger);" onclick="removeAdmin('${id}')">Удалить</button>` : ''}
         </div>
       `).join('')}
     </div>
-    <button class="btn btn-primary" onclick="promptAddAdmin()">➕ Добавить администратора</button>
+    <button class="btn btn-primary" onclick="promptAddAdmin()">➕ Добавить</button>
   `;
 }
-
 function promptAddAdmin() {
   openModal(`
-    <button class="modal-close" onclick="closeModal()">✕</button>
     <h3>Добавить администратора</h3>
-    <div class="field">
-      <label>ID пользователя (только цифры)</label>
-      <input id="new-admin-id" class="input" placeholder="123456789">
-    </div>
+    <div class="field"><label>ID пользователя</label><input id="new-admin-id" class="input" placeholder="123456789" inputmode="numeric"></div>
     <button class="btn btn-primary" onclick="confirmAddAdmin()">✅ Добавить</button>
   `);
 }
-
 function confirmAddAdmin() {
   const id = document.getElementById('new-admin-id').value.trim();
-  if (!/^\d+$/.test(id)) return toast('❌ ID должен содержать только цифры');
-  if (STATE.data.admins.includes(id)) return toast('❌ Уже администратор');
+  if (!/^\d+$/.test(id)) return toast('❌ ID только из цифр');
+  if (STATE.data.admins.includes(id)) return toast('❌ Уже админ');
   STATE.data.admins.push(id);
   saveData();
   closeModal();
-  toast('✅ Администратор добавлен');
+  toast('✅ Админ добавлен');
   render();
 }
-
 function removeAdmin(id) {
-  if (id === CONFIG.MAIN_ADMIN_ID) return toast('❌ Нельзя удалить главного админа');
+  if (id === CONFIG.MAIN_ADMIN_ID) return toast('❌ Нельзя удалить главного');
   STATE.data.admins = STATE.data.admins.filter(a => a !== id);
   saveData();
-  toast('✅ Администратор удалён');
+  toast('✅ Удалён');
   render();
 }
 
 /* ============================================================
    RENDER
    ============================================================ */
+const SCREENS = {
+  'main': screenMain,
+  'profile': screenProfile,
+  'create-trade': screenCreateTrade,
+  'join-trade': screenJoinTrade,
+  'trade-view': screenTradeView,
+  'my-trades': screenMyTrades,
+  'wallets': screenWallets,
+  'add-wallet': screenAddWallet,
+  'topup': screenTopup,
+  'withdraw': screenWithdraw,
+  'support': screenSupport,
+  'ratings': screenRatings,
+  'admin': screenAdmin,
+  'admin-trades': screenAdminTrades,
+  'admin-topups': screenAdminTopups,
+  'admin-manage': screenAdminManage
+};
+
 function render() {
-  const screens = {
-    'main': screenMain,
-    'profile': screenProfile,
-    'create-trade': screenCreateTrade,
-    'join-trade': screenJoinTrade,
-    'trade-view': screenTradeView,
-    'my-trades': screenMyTrades,
-    'wallets': screenWallets,
-    'add-wallet': screenAddWallet,
-    'topup': screenTopup,
-    'support': screenSupport,
-    'ratings': screenRatings,
-    'admin': screenAdmin,
-    'admin-trades': screenAdminTrades,
-    'admin-topups': screenAdminTopups,
-    'admin-manage': screenAdminManage
-  };
-  const fn = screens[STATE.currentScreen] || screenMain;
+  const fn = SCREENS[STATE.screen] || screenMain;
   document.getElementById('app').innerHTML = fn();
+  // Sync bottom nav active state
+  const tabMap = { 'main': 'main', 'my-trades': 'trades', 'wallets': 'wallets', 'profile': 'profile' };
+  if (tabMap[STATE.screen]) STATE.tab = tabMap[STATE.screen];
 }
 
 /* ============================================================
    INIT
    ============================================================ */
 function init() {
-  if (tg && tg.initDataUnsafe?.user) {
-    STATE.tgUser = tg.initDataUnsafe.user;
-  }
+  if (tg?.initDataUnsafe?.user) STATE.tgUser = tg.initDataUnsafe.user;
   loadData();
-
-  // Проверка ссылки ?trade=... (для прямых ссылок)
   const params = new URLSearchParams(location.search);
   const tradeParam = params.get('trade');
-
   if (tradeParam && STATE.data.trades[tradeParam]) {
     go('trade-view', { tradeId: tradeParam });
   } else {
     go('main');
   }
-
-  // Проверка pending ratings при старте
-  const uid = getUserId();
-  const pending = STATE.data.pendingRatings[uid] || [];
-  if (pending.length > 0) {
-    setTimeout(() => toast(`⭐ У вас ${pending.length} незавершённых оценок`), 600);
-  }
 }
-
 init();
 </script>
 </body>
