@@ -8,7 +8,7 @@ from aiogram.types import WebAppInfo
 # --- Конфигурация ---
 BOT_TOKEN = os.getenv("BOT_TOKEN", "9254789151:AAEZVzTwkydtrrW-DCTUn37VX4cjx589KW0")
 # Ссылка на ваш Web App, размещенный на GitHub Pages
-WEB_APP_URL = os.getenv("WEB_APP_URL", "https://ВАШ_ЛОГИН.github.io/ВАШ_РЕПОЗИТОРИЙ/index.html")
+WEB_APP_URL = os.getenv("WEB_APP_URL", "https://pokupkacom84-creator.github.io/mrkt-parser-bot/")
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
